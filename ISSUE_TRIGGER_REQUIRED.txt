@@ -1,1 +1,0 @@
-Create issue: Run MOTAMO hint and backspace patch
