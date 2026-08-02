@@ -1,4 +1,4 @@
-# MOTAMO — pilote solo v1.2
+# MOTAMO — pilote solo v1.3
 
 Pack statique prêt à déposer à la racine du dépôt GitHub Pages.
 

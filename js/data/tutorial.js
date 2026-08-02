@@ -9,6 +9,6 @@
       Object.freeze({ number: 3, title: 'Collectionnez', visual: 'rack' }),
       Object.freeze({ number: 4, title: 'Trouvez le mot', visual: 'final' })
     ]),
-    badges: Object.freeze(['7 questions', '3 vies', 'Accents facultatifs'])
+    badges: Object.freeze([])
   });
 })();

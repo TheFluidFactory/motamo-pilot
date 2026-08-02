@@ -1,56 +1,23 @@
-# MOTAMO pilot v1.2 — upload report
+# MOTAMO pilot v1.3 — upload report
 
 ## Upload
 
-Décompresser le ZIP et téléverser son contenu directement à la racine du dépôt.
+Extract the ZIP and upload its contents directly to the repository root, replacing the current files.
 
-La racine doit contenir :
+No build step, package installation or backend is required.
 
-- `index.html`
-- `.nojekyll`
-- `assets/`
-- `css/`
-- `js/`
-- `docs/`
-- `README.md`
+## Changes from v1.2
 
-Aucune compilation, installation npm ou infrastructure serveur n’est requise.
+Only the two requested interface adjustments were made:
 
-## Correction du mot final
+1. **Final-word alphabet bank**
+   - `AUTRES LETTRES` now always displays the complete alphabet A–Z, including letters also present in `LETTRES GAGNÉES`.
+   - Tile dimensions and the seven-column layout are unchanged.
+   - Every displayed tile remains a finite source: once placed, that specific yellow or white tile disappears until removed from the answer.
+   - When a final word needs more copies of a letter than the collected tiles plus the complete alphabet provide, the builder adds only the extra copies required to keep the level solvable.
 
-Le système ne réutilise plus les lettres comme des boutons générateurs.
+2. **Tutorial page**
+   - The four existing tutorial cards and their images are unchanged.
+   - The three pills below them were removed.
 
-Chaque bloc jaune ou blanc est maintenant une source unique :
-
-- placé dans le mot, il disparaît de sa banque ;
-- il ne peut pas être placé une deuxième fois ;
-- retiré par toucher ou glissement extérieur, il revient dans sa position initiale ;
-- durant le glissement, ni la source ni une copie statique dans la case de départ ne restent visibles.
-
-L’implémentation reste centralisée dans `js/game/final-word-builder.js`.
-
-## Correction des récompenses
-
-Le niveau BAVARDE utilise désormais les initiales des réponses :
-
-`VENT, D, BALEINE, AVOCAT, RAYON, ESCALIER, ABEILLE`
-
-soit :
-
-`V D B A R E A`
-
-La règle « récompense = initiale de la réponse principale » est contrôlée centralement pour les 28 questions du pilote.
-
-## Vérification
-
-Tests effectués :
-
-- syntaxe JavaScript ;
-- validation des données ;
-- parcours complet des sept questions ;
-- placement, déplacement et retrait des lettres ;
-- impossibilité de dupliquer une source ;
-- cas partiel avec cinq lettres gagnées ;
-- mot final BAVARDE et victoire ;
-- largeurs 320, 390 et 430 pixels ;
-- aucune erreur JavaScript ou console pendant les parcours testés.
+No gameplay, level, question, hint, shop, mission, navigation, purchase-preview or storage behaviour was changed.

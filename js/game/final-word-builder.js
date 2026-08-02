@@ -47,9 +47,9 @@
     [...M.config.alphabet].forEach((letter, alphabetIndex) => {
       const alreadyCollected = collectedCounts.get(letter) || 0;
       const required = requiredCounts.get(letter) || 0;
-      const baselineCopies = alreadyCollected > 0 ? 0 : 1;
-      const missingRequiredCopies = Math.max(0, required - alreadyCollected);
-      const copyCount = Math.max(baselineCopies, missingRequiredCopies);
+      const baselineCopies = 1;
+      const additionalRequiredCopies = Math.max(0, required - alreadyCollected - baselineCopies);
+      const copyCount = baselineCopies + additionalRequiredCopies;
 
       for (let copyIndex = 0; copyIndex < copyCount; copyIndex += 1) {
         alphabetSources.push({
