@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#061631">
+  <meta name="description" content="Pilote du jeu de lettres MOTAMO — mode Classique solo.">
+  <title>MOTAMO — Pilote solo</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <script src="js/data.js" defer></script>
+  <script src="js/app.js" defer></script>
+</head>
+<body>
+  <svg width="0" height="0" aria-hidden="true" focusable="false" class="svg-sprite">
+    <symbol id="i-play" viewBox="0 0 24 24"><path d="m8 5 11 7-11 7Z"/></symbol>
+    <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.7 9a2.5 2.5 0 1 1 4.2 1.8c-1.4 1.1-1.9 1.6-1.9 3.2M12 18h.01"/></symbol>
+    <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5 8 12l7 7M8.5 12H20"/></symbol>
+    <symbol id="i-heart" viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l1.1 1.1L12 21l7.8-7.5 1.1-1.1a5.5 5.5 0 0 0-.1-7.8Z"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2.7 2.75 5.57 6.15.9-4.45 4.33 1.05 6.12L12 16.73l-5.5 2.89 1.05-6.12L3.1 9.17l6.15-.9Z"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-reset" viewBox="0 0 24 24"><path d="M4 4v6h6M20 20v-6h-6"/><path d="M5.5 15a7 7 0 0 0 11.7 2.5L20 14M4 10l2.8-3.5A7 7 0 0 1 18.5 9"/></symbol>
+    <symbol id="i-skip" viewBox="0 0 24 24"><path d="m5 5 8 7-8 7ZM15 5v14"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z"/><circle cx="12" cy="12" r="2.5"/></symbol>
+    <symbol id="i-level" viewBox="0 0 24 24"><path d="M4 19h16M6 16l3-4 3 2 5-7 2 3"/></symbol>
+  </svg>
+
+  <div class="app-shell">
+    <div class="ambient-stars" aria-hidden="true"></div>
+
+    <main class="app" id="app">
+      <section class="screen screen-home is-active" data-screen="home" aria-labelledby="home-title">
+        <button class="round-control home-reset" id="home-reset" type="button" aria-label="Réinitialiser la progression">
+          <svg class="icon"><use href="#i-reset"></use></svg>
+        </button>
+
+        <div class="home-content">
+          <div class="brand-mark" aria-hidden="true">
+            <span class="brand-hat">◆</span>
+            <span>M</span>
+          </div>
+          <h1 class="brand-title" id="home-title">MOTAMO</h1>
+          <p class="home-copy">Répondez aux questions, collectionnez des lettres et retrouvez le mot mystère.</p>
+
+          <div class="home-actions">
+            <button class="button button-primary button-large" id="play-button" type="button">
+              <svg class="icon"><use href="#i-play"></use></svg>
+              Jouer
+            </button>
+            <button class="button button-secondary" id="how-button" type="button">
+              <svg class="icon"><use href="#i-help"></use></svg>
+              Comment jouer
+            </button>
+          </div>
+
+          <div class="pilot-note">
+            <span>Mode pilote</span>
+            <strong>Classique solo · 3 niveaux</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="how" aria-labelledby="how-title" hidden>
+        <header class="topbar">
+          <button class="round-control" type="button" data-nav="home" aria-label="Retour à l'accueil">
+            <svg class="icon"><use href="#i-back"></use></svg>
+          </button>
+          <h2 id="how-title">Comment jouer</h2>
+          <span class="topbar-spacer" aria-hidden="true"></span>
+        </header>
+
+        <div class="screen-scroll tutorial-scroll">
+          <div class="tutorial-card">
+            <article class="tutorial-step">
+              <span class="step-number">1</span>
+              <div>
+                <h3>Répondez à sept questions</h3>
+                <p>Chaque niveau contient sept questions courtes. Le type, la difficulté et la longueur attendue sont indiqués.</p>
+              </div>
+            </article>
+            <article class="tutorial-step">
+              <span class="step-number">2</span>
+              <div>
+                <h3>Gagnez une lettre</h3>
+                <p>Chaque bonne réponse ajoute une lettre à votre collection. Une erreur ou un passage retire une vie et laisse une lettre inconnue.</p>
+              </div>
+            </article>
+            <article class="tutorial-step">
+              <span class="step-number">3</span>
+              <div>
+                <h3>Observez les indices mélangés</h3>
+                <p>Les lettres gagnées sont volontairement présentées dans un ordre différent du mot final. Les lettres manquées deviennent des « ? ».</p>
+              </div>
+            </article>
+            <article class="tutorial-step">
+              <span class="step-number">4</span>
+              <div>
+                <h3>Retrouvez le mot mystère</h3>
+                <p>Saisissez le mot complet. Chaque proposition incorrecte retire une vie. Le niveau est gagné tant qu'il vous reste au moins une vie.</p>
+              </div>
+            </article>
+          </div>
+          <button class="button button-primary button-wide" type="button" data-nav="levels">J'ai compris</button>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="levels" aria-labelledby="levels-title" hidden>
+        <header class="topbar">
+          <button class="round-control" type="button" data-nav="home" aria-label="Retour à l'accueil">
+            <svg class="icon"><use href="#i-back"></use></svg>
+          </button>
+          <h2 id="levels-title">Niveaux</h2>
+          <button class="round-control" type="button" data-nav="how" aria-label="Comment jouer">
+            <svg class="icon"><use href="#i-help"></use></svg>
+          </button>
+        </header>
+
+        <div class="screen-scroll levels-scroll">
+          <div class="progress-summary">
+            <div>
+              <span class="eyebrow">Progression</span>
+              <strong id="global-progress-text">0/3 niveaux</strong>
+            </div>
+            <div class="progress-track" role="progressbar" aria-label="Progression globale" aria-valuemin="0" aria-valuemax="3" aria-valuenow="0">
+              <span id="global-progress-fill"></span>
+            </div>
+          </div>
+
+          <div class="level-list" id="level-list"></div>
+        </div>
+      </section>
+
+      <section class="screen screen-game" data-screen="game" aria-labelledby="game-question" hidden>
+        <header class="game-hud">
+          <button class="round-control hud-back" type="button" id="quit-level" aria-label="Quitter le niveau">
+            <svg class="icon"><use href="#i-back"></use></svg>
+          </button>
+          <div class="hud-centre">
+            <strong id="hud-level">Niveau 1</strong>
+            <span id="hud-question">Question 1/7</span>
+          </div>
+          <div class="lives" id="lives" aria-label="3 vies restantes"></div>
+        </header>
+
+        <div class="screen-scroll game-scroll">
+          <div class="game-stack">
+            <div class="question-meta">
+              <span class="type-pill" id="question-type">Définition</span>
+              <span class="difficulty" id="question-difficulty">Difficulté 1</span>
+            </div>
+
+            <section class="question-card">
+              <span class="floating-label">Question</span>
+              <p class="question-text" id="game-question"></p>
+            </section>
+
+            <form class="answer-form" id="answer-form" novalidate>
+              <label class="answer-label" for="answer-input">
+                Votre réponse
+                <span id="answer-length">7 lettres</span>
+              </label>
+              <input class="answer-input" id="answer-input" name="answer" type="text" autocomplete="off" autocapitalize="sentences" spellcheck="false" required>
+              <p class="input-message" id="input-message" aria-live="polite"></p>
+              <div class="answer-actions">
+                <button class="button button-primary" type="submit">Valider</button>
+                <button class="button button-dark" id="skip-question" type="button">
+                  <svg class="icon"><use href="#i-skip"></use></svg>
+                  Je passe
+                </button>
+              </div>
+            </form>
+
+            <section class="collection-panel" aria-labelledby="collection-title">
+              <div class="collection-head">
+                <div>
+                  <span class="eyebrow">Progression du mot</span>
+                  <h3 id="collection-title">Lettres gagnées</h3>
+                </div>
+                <strong id="collection-count">0/7</strong>
+              </div>
+              <div class="letter-rack compact" id="live-letter-rack" aria-label="Lettres collectées"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen" data-screen="final" aria-labelledby="final-title" hidden>
+        <header class="topbar final-topbar">
+          <button class="round-control" id="final-quit" type="button" aria-label="Quitter le niveau">
+            <svg class="icon"><use href="#i-back"></use></svg>
+          </button>
+          <h2 id="final-title">Mot mystère</h2>
+          <div class="lives" id="final-lives" aria-label="3 vies restantes"></div>
+        </header>
+
+        <div class="screen-scroll final-scroll">
+          <div class="final-intro">
+            <span class="eyebrow">Sept questions terminées</span>
+            <h3>Retrouvez le mot de 7 lettres</h3>
+            <p>Les lettres sont mélangées. Chaque « ? » correspond à une réponse manquée.</p>
+          </div>
+
+          <div class="letter-rack final-rack" id="final-letter-rack" aria-label="Indices du mot mystère"></div>
+
+          <form class="final-form" id="final-form" novalidate>
+            <label class="answer-label" for="final-input">Votre mot · 7 lettres</label>
+            <input class="answer-input answer-input-large" id="final-input" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" required>
+            <p class="input-message" id="final-message" aria-live="polite"></p>
+            <button class="button button-primary button-wide" type="submit">Valider le mot</button>
+          </form>
+        </div>
+      </section>
+
+      <section class="screen result-screen result-victory" data-screen="victory" aria-labelledby="victory-title" hidden>
+        <div class="confetti" aria-hidden="true"></div>
+        <div class="result-content">
+          <p class="result-kicker">Niveau terminé</p>
+          <h2 id="victory-title">Victoire !</h2>
+          <p class="result-label">Mot trouvé</p>
+          <div class="result-word" id="victory-word"></div>
+          <div class="result-stars" id="victory-stars" aria-label="Résultat"></div>
+          <p class="result-copy" id="victory-copy"></p>
+          <div class="result-actions">
+            <button class="button button-primary button-wide" id="next-level" type="button">Niveau suivant</button>
+            <button class="button button-secondary button-wide" id="replay-level" type="button">Rejouer</button>
+            <button class="button button-dark button-wide" type="button" data-nav="levels">Retour aux niveaux</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen result-screen result-defeat" data-screen="defeat" aria-labelledby="defeat-title" hidden>
+        <div class="rain" aria-hidden="true"></div>
+        <div class="result-content">
+          <div class="sad-cloud" aria-hidden="true">☁</div>
+          <h2 id="defeat-title">Dommage !</h2>
+          <p class="result-copy" id="defeat-reason"></p>
+          <p class="result-label">Le mot était</p>
+          <div class="result-word" id="defeat-word"></div>
+          <p class="answer-reveal" id="defeat-answer"></p>
+          <div class="result-actions">
+            <button class="button button-secondary button-wide" id="retry-level" type="button">Recommencer</button>
+            <button class="button button-dark button-wide" type="button" data-nav="levels">Retour aux niveaux</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="overlay" id="feedback-overlay" hidden>
+      <section class="feedback-dialog" role="dialog" aria-modal="true" aria-labelledby="feedback-title">
+        <div class="feedback-icon" id="feedback-icon"></div>
+        <h2 id="feedback-title"></h2>
+        <p id="feedback-copy"></p>
+        <div class="earned-letter" id="earned-letter" hidden></div>
+        <p class="feedback-detail" id="feedback-detail"></p>
+        <button class="button button-primary button-wide" id="feedback-continue" type="button">Continuer</button>
+      </section>
+    </div>
+
+    <div class="overlay" id="confirm-overlay" hidden>
+      <section class="feedback-dialog confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+        <div class="feedback-icon neutral">
+          <svg class="icon"><use href="#i-reset"></use></svg>
+        </div>
+        <h2 id="confirm-title">Réinitialiser ?</h2>
+        <p>Les niveaux terminés, les étoiles et le tutoriel seront effacés sur cet appareil.</p>
+        <div class="confirm-actions">
+          <button class="button button-danger" id="confirm-reset" type="button">Tout effacer</button>
+          <button class="button button-dark" id="cancel-reset" type="button">Annuler</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  </div>
+</body>
+</html>
