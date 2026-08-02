@@ -1,1 +1,2 @@
 Run MOTAMO hint and backspace patch
+trigger: 2
