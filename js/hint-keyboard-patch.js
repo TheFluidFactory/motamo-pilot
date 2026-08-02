@@ -68,8 +68,8 @@
     function configureBackspaceKeys() {
       document.querySelectorAll('.keyboard-panel .key.action').forEach((button) => {
         const row = button.closest('.keyboard-row');
-        if (row) row.append(button);
-        button.replaceChildren(document.createTextNode('‹'));
+        if (row && row.lastElementChild !== button) row.append(button);
+        if (button.textContent !== '‹') button.replaceChildren(document.createTextNode('‹'));
         button.setAttribute('aria-label', 'Effacer la dernière lettre');
       });
     }
@@ -139,19 +139,33 @@
       window.requestAnimationFrame(applyHintVisual);
     }
 
-    function initialiseQuestion() {
-      const question = findCurrentQuestion();
-      if (!question) return;
+    function resetQuestionState(question) {
       const length = normalize(question.answer).length;
-      if (state.question?.id === question.id && state.hintIndex !== null) {
-        window.requestAnimationFrame(applyHintVisual);
-        return;
-      }
-
       state.question = question;
       state.hintIndex = length > 1 ? 1 + Math.floor(Math.random() * (length - 1)) : null;
       state.userEntry = '';
       state.syncedEntry = '';
+      window.requestAnimationFrame(applyHintVisual);
+    }
+
+    function initialiseQuestion() {
+      const question = findCurrentQuestion();
+      if (!question) return;
+
+      if (state.question?.id !== question.id || state.hintIndex === null) {
+        resetQuestionState(question);
+        return;
+      }
+
+      const visibleTypedLetters = [...answerSlots.children].filter((slot, index) =>
+        index !== state.hintIndex && Boolean(slot.textContent)
+      ).length;
+
+      if (state.syncedEntry && visibleTypedLetters === 0) {
+        resetQuestionState(question);
+        return;
+      }
+
       window.requestAnimationFrame(applyHintVisual);
     }
 
@@ -202,8 +216,14 @@
     const slotsObserver = new MutationObserver(() => window.requestAnimationFrame(applyHintVisual));
     slotsObserver.observe(answerSlots, { childList: true });
 
+    document.querySelectorAll('.keyboard-panel').forEach((panel) => {
+      const keyboardObserver = new MutationObserver(configureBackspaceKeys);
+      keyboardObserver.observe(panel, { childList: true, subtree: true });
+    });
+
     configureBackspaceKeys();
     initialiseQuestion();
+    window.setTimeout(configureBackspaceKeys, 0);
   }
 
   if (document.readyState === 'loading') {
