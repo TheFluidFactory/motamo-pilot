@@ -8,20 +8,21 @@
     activeScreen: 'home',
     feedbackAction: null,
     toastTimer: null,
+    questionController: null,
 
     initialise() {
       this.progress = M.core.storage.loadProgress();
     },
 
     startAttempt(level) {
+      this.questionController?.destroy?.();
+      this.questionController = null;
       this.attempt = {
         level,
         questionIndex: 0,
         lives: M.config.livesPerLevel,
         statuses: Array(M.config.questionsPerLevel).fill(null),
         earned: Array(M.config.questionsPerLevel).fill(null),
-        questionEntry: '',
-        questionHintIndex: null,
         finalEntry: '',
         defeatContext: null
       };

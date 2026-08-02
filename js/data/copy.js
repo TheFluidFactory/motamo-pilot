@@ -3,15 +3,17 @@
   const M = window.Motamo;
 
   M.data.copy = Object.freeze({
-    levelsPreview: 'Niveau 1 jouable · niveaux 2 à 20 en aperçu',
     completeAllCases: 'Complétez toutes les cases.',
-    completeSevenCases: 'Complétez les sept cases.',
+    chooseAnswer: 'Choisissez une réponse.',
     correctTitle: 'Bonne réponse !',
     wrongTitle: 'Mauvaise réponse',
+    wrongCopy: 'Ce n’est pas la bonne réponse.',
     skippedTitle: 'Question passée',
+    skippedCopy: 'Vous pourrez retenter cette question en rejouant le niveau.',
     noLives: 'Vous n’avez plus de vie.',
     finalWrong: 'Ce n’est pas le mot. Vous perdez une vie.',
     resetToast: 'Progression réinitialisée',
-    missionToast: 'Récompense réclamée · aperçu'
+    missionToast: 'Récompense réclamée · aperçu',
+    shopToast: 'Aperçu de la boutique · aucun achat n’est effectué.'
   });
 })();

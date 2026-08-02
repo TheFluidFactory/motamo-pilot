@@ -3,16 +3,70 @@
   const M = window.Motamo;
   const { normalizeLettersOnly, countLetters } = M.core.utils;
 
+  function normalizedAnswers(question) {
+    return [question.answer, ...(question.acceptedAnswers || [])].map(normalizeLettersOnly);
+  }
+
+  function sameLetters(left, right) {
+    return [...normalizeLettersOnly(left)].sort().join('') === [...normalizeLettersOnly(right)].sort().join('');
+  }
+
+  function validateTextQuestion(question) {
+    const answers = normalizedAnswers(question);
+    const expected = answers[0]?.length || 0;
+    if (!expected) throw new Error(`Réponse vide : ${question.id}.`);
+
+    answers.slice(1).forEach((variant) => {
+      if (variant.length !== expected) {
+        throw new Error(`La variante « ${variant} » n'a pas la même longueur que « ${question.answer} » (${question.id}).`);
+      }
+    });
+
+    const hintIndex = question.hintIndex;
+    if (expected === 1 && hintIndex !== null && hintIndex !== undefined) {
+      throw new Error(`Une réponse d'une lettre ne peut pas avoir d'indice (${question.id}).`);
+    }
+    if (hintIndex !== null && hintIndex !== undefined) {
+      if (!Number.isInteger(hintIndex) || hintIndex <= 0 || hintIndex >= expected) {
+        throw new Error(`Position d'indice invalide pour ${question.id}.`);
+      }
+      const hintLetter = answers[0][hintIndex];
+      if (answers.some((answer) => answer[hintIndex] !== hintLetter)) {
+        throw new Error(`Les variantes de ${question.id} ne partagent pas la lettre indice prédéfinie.`);
+      }
+    }
+  }
+
+  function validateAnagramQuestion(question) {
+    if (!question.letterBank) throw new Error(`Banque de lettres absente : ${question.id}.`);
+    if (!sameLetters(question.letterBank, question.answer)) {
+      throw new Error(`La banque de lettres ne correspond pas à la réponse (${question.id}).`);
+    }
+  }
+
+  function validateMultipleChoiceQuestion(question) {
+    if (!Array.isArray(question.options) || question.options.length < 2) {
+      throw new Error(`Choix multiples invalides : ${question.id}.`);
+    }
+    const values = question.options.map((option) => normalizeLettersOnly(typeof option === 'string' ? option : option.value));
+    if (!values.includes(normalizeLettersOnly(question.answer))) {
+      throw new Error(`La bonne réponse n'est pas présente dans les choix (${question.id}).`);
+    }
+  }
+
   function validateData(levels) {
-    if (!levels.length) throw new Error('Aucun niveau MOTAMO chargé.');
+    if (!Array.isArray(levels) || !levels.length) throw new Error('Aucun niveau MOTAMO chargé.');
+    const ids = new Set();
 
     levels.forEach((level) => {
+      if (ids.has(level.id)) throw new Error(`Identifiant de niveau dupliqué : ${level.id}.`);
+      ids.add(level.id);
+
       const word = [...normalizeLettersOnly(level.word)];
-      const scramble = level.scramble.map(normalizeLettersOnly);
-      const rewards = level.questions.map((question) => normalizeLettersOnly(question.rewardLetter));
+      const scramble = (level.scramble || []).map(normalizeLettersOnly);
+      const rewards = (level.questions || []).map((question) => normalizeLettersOnly(question.rewardLetter));
 
       if (word.length !== M.config.questionsPerLevel) throw new Error(`Le niveau ${level.id} doit avoir un mot de ${M.config.questionsPerLevel} lettres.`);
-      if (new Set(word).size !== M.config.questionsPerLevel) throw new Error(`Le mot ${level.word} contient une lettre répétée.`);
       if (level.questions.length !== M.config.questionsPerLevel) throw new Error(`Le niveau ${level.id} doit contenir ${M.config.questionsPerLevel} questions.`);
       if (scramble.length !== M.config.questionsPerLevel || scramble.some((letter) => letter.length !== 1)) throw new Error(`Mélange invalide au niveau ${level.id}.`);
       if ([...scramble].sort().join('') !== [...word].sort().join('')) throw new Error(`Le mélange du niveau ${level.id} ne correspond pas au mot.`);
@@ -20,58 +74,27 @@
       if (rewards.join('') !== scramble.join('')) throw new Error(`Les récompenses du niveau ${level.id} ne suivent pas le mélange.`);
 
       level.questions.forEach((question) => {
-        const expected = countLetters(question.answer);
-        if (!expected) throw new Error(`Réponse vide : ${question.id}.`);
-        (question.acceptedAnswers || []).forEach((variant) => {
-          if (countLetters(variant) !== expected) {
-            throw new Error(`La variante « ${variant} » n'a pas la même longueur que « ${question.answer} » (${question.id}).`);
-          }
-        });
+        const interaction = question.interaction || M.config.defaultQuestionInteraction;
+        if (!normalizeLettersOnly(question.answer)) throw new Error(`Réponse vide : ${question.id}.`);
+        if (normalizeLettersOnly(question.rewardLetter).length !== 1) throw new Error(`Lettre récompense invalide : ${question.id}.`);
+        if (interaction === 'text') validateTextQuestion(question);
+        else if (interaction === 'anagram') validateAnagramQuestion(question);
+        else if (interaction === 'multipleChoice') validateMultipleChoiceQuestion(question);
+        else throw new Error(`Type d'interaction inconnu « ${interaction} » (${question.id}).`);
       });
     });
   }
 
-  function normalizedAnswers(question) {
-    return [question.answer, ...(question.acceptedAnswers || [])].map(normalizeLettersOnly);
-  }
-
-  function chooseHintIndex(question) {
-    const length = countLetters(question.answer);
-    return length > 1 ? 1 + Math.floor(Math.random() * (length - 1)) : null;
-  }
-
-  function answerPosition(entryIndex, hintIndex) {
-    if (hintIndex === null || hintIndex === undefined) return entryIndex;
-    return entryIndex >= hintIndex ? entryIndex + 1 : entryIndex;
-  }
-
-  function matchingAnswers(question, entry, hintIndex) {
-    const typed = [...entry];
-    return normalizedAnswers(question).filter((answer) =>
-      typed.every((letter, entryIndex) => answer[answerPosition(entryIndex, hintIndex)] === letter)
-    );
-  }
-
-  function hintLetter(question, entry, hintIndex) {
-    if (hintIndex === null || hintIndex === undefined) return '';
-    const answer = matchingAnswers(question, entry, hintIndex)[0] || normalizedAnswers(question)[0] || '';
-    return answer[hintIndex] || '';
-  }
-
-  function isAcceptedQuestionEntry(question, entry, hintIndex) {
-    return normalizedAnswers(question).some((answer) => {
-      if (hintIndex === null || hintIndex === undefined) return answer === entry;
-      return answer.slice(0, hintIndex) + answer.slice(hintIndex + 1) === entry;
-    });
+  function isAcceptedAnswer(question, value) {
+    const entered = normalizeLettersOnly(value);
+    return normalizedAnswers(question).includes(entered);
   }
 
   M.game.answers = Object.freeze({
     validateData,
     normalizedAnswers,
-    chooseHintIndex,
-    answerPosition,
-    matchingAnswers,
-    hintLetter,
-    isAcceptedQuestionEntry
+    isAcceptedAnswer,
+    sameLetters,
+    countLetters
   });
 })();

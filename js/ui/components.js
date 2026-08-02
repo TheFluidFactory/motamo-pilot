@@ -195,6 +195,36 @@
     return article;
   }
 
+
+  function createShopPack(pack) {
+    const article = document.createElement('article');
+    article.className = `shop-pack theme-${pack.theme}`;
+    article.dataset.packId = pack.id;
+
+    const badge = document.createElement('span');
+    badge.className = 'shop-pack-badge';
+    badge.textContent = pack.badge;
+
+    const icon = document.createElement('div');
+    icon.className = 'shop-pack-icon';
+    icon.append(svgUse(pack.icon));
+
+    const title = document.createElement('h3');
+    title.textContent = pack.title;
+    const subtitle = document.createElement('p');
+    subtitle.textContent = pack.subtitle;
+
+    const buy = document.createElement('button');
+    buy.type = 'button';
+    buy.className = 'shop-buy';
+    buy.dataset.shopPack = pack.id;
+    buy.textContent = pack.price;
+    buy.setAttribute('aria-label', `${pack.title}, ${pack.price}, aperçu uniquement`);
+
+    article.append(badge, icon, title, subtitle, buy);
+    return article;
+  }
+
   M.ui.components = Object.freeze({
     renderLives,
     createLetterTile,
@@ -204,6 +234,7 @@
     renderSlots,
     buildKeyboard,
     createMissionCard,
-    createTutorialCard
+    createTutorialCard,
+    createShopPack
   });
 })();

@@ -1,28 +1,54 @@
-# MOTAMO pilot — scalable source pack
+# MOTAMO — pilote solo v1 étendu
 
-This pack is a structural refactor of the working MOTAMO pilot. It is intended to produce the same visual and gameplay experience while making future changes safer and easier to propagate.
+Pack statique prêt à déposer à la racine du dépôt GitHub Pages.
 
-## Uploading
+## Publication
 
-Upload the **contents** of this folder to the root of the existing GitHub Pages repository, replacing the current files. There is no build step, package manager, framework, or server dependency.
+1. Décompresser le ZIP.
+2. Remplacer le contenu du dépôt par **le contenu du dossier décompressé**.
+3. Conserver `index.html`, `css`, `js`, `assets`, `docs` et `.nojekyll` à la racine.
+4. Faire un hard refresh après la publication.
 
-## Where to change things
+Aucune dépendance, compilation ou installation npm n’est nécessaire.
 
-- `js/config.js` — shared rules and constants: lives, question count, keyboard rows, splash timing, displayed level count and difficulty groups.
-- `js/data/levels.js` — levels, questions, accepted alternatives and reward letters.
-- `js/data/missions.js` — mission cards and their example states.
-- `js/data/tutorial.js` — How to Play steps and badges.
-- `js/data/copy.js` — reusable interface messages.
-- `css/tokens.css` — colours, spacing, shadows, radii and typography variables.
-- `css/styles.css` — component and screen styling.
-- `js/ui/components.js` — reusable keyboard, lives, stars, answer blocks, mission cards and tutorial cards.
-- `js/ui/screens.js` — screen navigation and screen-level rendering.
-- `js/game/answers.js` — answer normalization, helper-letter rules and accepted-answer matching.
-- `js/game/engine.js` — gameplay sequence, lives, feedback, rewards, final word and results.
-- `js/app.js` — small bootstrap file only.
+## Contenu jouable
 
-## Important design principle
+- Facile niveau 1 — niveau historique du pilote.
+- Facile niveau 2 — nouveau niveau BAVARDE avec saisie clavier, choix multiple et anagrammes tactiles.
+- Intermédiaire niveau 1 — niveau historique du pilote.
+- Difficile niveau 1 — niveau historique du pilote.
+- Pack Premium verrouillé — aperçu visuel uniquement.
 
-Content and repeated UI are data-driven. Adding another mission or tutorial step means adding one data object, not copying HTML. Shared game rules live in one config file, and repeating visual elements are rendered by one component function.
+## Architecture
 
-See `docs/ARCHITECTURE.md` for the dependency map and safe-change examples.
+```text
+js/
+├── config.js
+├── core/              # état, stockage, utilitaires
+├── data/              # niveaux, missions, tutoriel, boutique, textes UI
+├── game/              # validation et moteur partagé
+├── question-types/    # registre et composants d’interaction
+└── ui/                # DOM, composants et écrans
+```
+
+Les nouveaux formats de questions se branchent via `js/question-types/registry.js`. Le moteur de progression, les vies, les récompenses et les écrans de feedback restent communs.
+
+## Ajouter une question
+
+Les niveaux se trouvent dans `js/data/levels.js`.
+
+Interactions actuellement enregistrées :
+
+- `text`
+- `anagram`
+- `multipleChoice`
+
+Les indices des réponses clavier sont prédéfinis par `hintIndex`. La valeur doit être `null` pour une réponse d’une lettre. L’indice 0 est interdit.
+
+## Boutique
+
+La boutique est une maquette. Les boutons n’effectuent aucun paiement et ne débloquent rien.
+
+## Vérifications
+
+Voir `docs/QA.md` et `docs/CHANGELOG_PILOT_V1.md`.

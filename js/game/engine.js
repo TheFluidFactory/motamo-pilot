@@ -2,7 +2,7 @@
   'use strict';
   const M = window.Motamo;
   const state = M.core.state;
-  const { normalizeLettersOnly, countLetters, svgUse } = M.core.utils;
+  const { normalizeLettersOnly, svgUse } = M.core.utils;
   const C = M.ui.components;
   const S = M.ui.screens;
   const A = M.game.answers;
@@ -14,47 +14,10 @@
   function updateQuestionSubmitButton() {
     const button = document.querySelector('#submit-question');
     if (!button) return;
-    const ready = Boolean(state.attempt && currentQuestion() && state.attempt.questionEntry.length === keyboardModeMax('question'));
+    const ready = Boolean(state.attempt && currentQuestion() && state.questionController?.isComplete());
     button.disabled = !ready;
     button.classList.toggle('is-ready', ready);
     button.setAttribute('aria-disabled', String(!ready));
-  }
-
-  function renderQuestionSlots() {
-    const dom = M.ui.dom;
-    const attempt = state.attempt;
-    const question = currentQuestion();
-    if (!attempt || !question) return;
-
-    const total = countLetters(question.answer);
-    const hintIndex = attempt.questionHintIndex;
-    const hintLetter = A.hintLetter(question, attempt.questionEntry, hintIndex);
-    const entry = [...attempt.questionEntry];
-    dom.answerSlots.replaceChildren();
-    C.setSlotContainerWidth(dom.answerSlots, total);
-
-    for (let index = 0; index < total; index += 1) {
-      const slot = document.createElement('span');
-      slot.className = 'answer-slot';
-      if (index === hintIndex) {
-        slot.textContent = hintLetter;
-        slot.classList.add('filled', 'hint-letter');
-        slot.setAttribute('aria-label', `Lettre indice : ${hintLetter}`);
-      } else {
-        const entryIndex = hintIndex === null || index < hintIndex ? index : index - 1;
-        const letter = entry[entryIndex];
-        if (letter) {
-          slot.textContent = letter;
-          slot.classList.add('filled');
-        } else if (entryIndex === entry.length) {
-          slot.classList.add('next');
-        }
-      }
-      dom.answerSlots.append(slot);
-    }
-
-    dom.answerSlots.setAttribute('aria-label', `Réponse avec une lettre indice, ${attempt.questionEntry.length} lettre${attempt.questionEntry.length > 1 ? 's' : ''} saisie${attempt.questionEntry.length > 1 ? 's' : ''}`);
-    updateQuestionSubmitButton();
   }
 
   function renderLiveCollection() {
@@ -85,64 +48,66 @@
     });
   }
 
+  function mountQuestionInteraction(question) {
+    const dom = M.ui.dom;
+    state.questionController?.destroy?.();
+    state.questionController = null;
+    dom.inputMessage.textContent = '';
+    dom.questionInteractionCard.classList.remove('is-error');
+
+    const interaction = question.interaction || M.config.defaultQuestionInteraction;
+    const controller = M.game.questionTypes.create(interaction, {
+      question,
+      host: dom.questionInteraction,
+      keyboard: dom.gameKeyboard,
+      inputMessage: dom.inputMessage,
+      answerAreaLabel: dom.answerAreaLabel,
+      onChange: () => updateQuestionSubmitButton()
+    });
+    state.questionController = controller;
+
+    dom.gameKeyboard.hidden = !controller.usesKeyboard;
+    dom.gamePlayLayout.classList.toggle('no-keyboard', !controller.usesKeyboard);
+    dom.questionInteractionCard.dataset.interaction = interaction;
+    updateQuestionSubmitButton();
+  }
+
   function renderQuestion() {
     const dom = M.ui.dom;
     const attempt = state.attempt;
     const question = currentQuestion();
     if (!attempt || !question) return;
-    attempt.questionEntry = '';
-    attempt.questionHintIndex = A.chooseHintIndex(question);
 
-    dom.hudLevel.textContent = `${attempt.level.difficultyLabel} · 1`;
+    dom.hudLevel.textContent = `${attempt.level.difficultyLabel} · ${attempt.level.levelNumber}`;
     dom.hudQuestion.textContent = `Question ${attempt.questionIndex + 1}/${M.config.questionsPerLevel}`;
-    dom.questionType.textContent = question.type;
     dom.questionDifficulty.textContent = `Difficulté ${question.difficulty || 1}`;
     dom.gameQuestion.textContent = question.prompt;
-    dom.inputMessage.textContent = '';
-    dom.answerSlots.classList.remove('is-error', 'shake');
     C.renderLives(dom.lives, attempt.lives);
-    renderQuestionSlots();
+    mountQuestionInteraction(question);
     renderLiveCollection();
   }
 
   function startLevel(levelId) {
-    const level = M.data.levels.find((item) => item.id === Number(levelId));
+    const level = M.data.levels.find((item) => String(item.id) === String(levelId));
     if (!level) return;
     state.startAttempt(level);
     renderQuestion();
     S.showScreen('game');
   }
 
-  function keyboardModeMax(mode) {
-    if (mode === 'question') {
-      const total = countLetters(currentQuestion()?.answer || '');
-      return Math.max(0, total - (state.attempt?.questionHintIndex === null || state.attempt?.questionHintIndex === undefined ? 0 : 1));
-    }
-    if (mode === 'final') return M.config.questionsPerLevel;
-    return 0;
+  function currentFinalEntry() {
+    return state.attempt?.finalEntry || '';
   }
 
-  function currentEntry(mode) {
-    return mode === 'question' ? state.attempt?.questionEntry || '' : state.attempt?.finalEntry || '';
-  }
-
-  function setEntry(mode, nextValue) {
+  function setFinalEntry(nextValue) {
     const dom = M.ui.dom;
     const attempt = state.attempt;
     if (!attempt) return;
-    const max = keyboardModeMax(mode);
-    const clean = normalizeLettersOnly(nextValue).slice(0, max);
-    if (mode === 'question') {
-      attempt.questionEntry = clean;
-      dom.inputMessage.textContent = '';
-      dom.answerSlots.classList.remove('is-error');
-      renderQuestionSlots();
-    } else {
-      attempt.finalEntry = clean;
-      dom.finalMessage.textContent = '';
-      dom.finalSlots.classList.remove('is-error');
-      C.renderSlots(dom.finalSlots, max, clean, 'Mot mystère');
-    }
+    const clean = normalizeLettersOnly(nextValue).slice(0, M.config.questionsPerLevel);
+    attempt.finalEntry = clean;
+    dom.finalMessage.textContent = '';
+    dom.finalSlots.classList.remove('is-error');
+    C.renderSlots(dom.finalSlots, M.config.questionsPerLevel, clean, 'Mot mystère');
   }
 
   function handleKey(mode, key) {
@@ -150,47 +115,50 @@
     if (!state.attempt || dom.feedbackOverlay.hidden === false || dom.confirmOverlay.hidden === false) return;
     if ((mode === 'question' && state.activeScreen !== 'game') || (mode === 'final' && state.activeScreen !== 'final')) return;
 
-    const value = currentEntry(mode);
-    const max = keyboardModeMax(mode);
+    if (mode === 'question') {
+      if (key === 'ENTER') {
+        submitQuestion();
+        return;
+      }
+      state.questionController?.handleKey?.(key);
+      updateQuestionSubmitButton();
+      return;
+    }
+
+    const value = currentFinalEntry();
     if (key === 'BACKSPACE') {
-      setEntry(mode, value.slice(0, -1));
+      setFinalEntry(value.slice(0, -1));
       return;
     }
     if (key === 'ENTER') {
-      if (mode === 'question') submitQuestion();
-      else submitFinalWord();
+      submitFinalWord();
       return;
     }
     if (/^[A-Z]$/.test(key)) {
-      if (value.length >= max) {
-        const target = mode === 'question' ? dom.answerSlots : dom.finalSlots;
-        target.classList.remove('shake');
-        void target.offsetWidth;
-        target.classList.add('shake');
+      if (value.length >= M.config.questionsPerLevel) {
+        dom.finalSlots.classList.remove('shake');
+        void dom.finalSlots.offsetWidth;
+        dom.finalSlots.classList.add('shake');
         return;
       }
-      setEntry(mode, value + key);
+      setFinalEntry(value + key);
     }
   }
 
   function submitQuestion() {
-    const dom = M.ui.dom;
     const attempt = state.attempt;
     const question = currentQuestion();
-    if (!attempt || !question) return;
-    const expected = keyboardModeMax('question');
-    const value = attempt.questionEntry;
+    const controller = state.questionController;
+    if (!attempt || !question || !controller) return;
 
-    if (value.length < expected) {
-      dom.inputMessage.textContent = M.data.copy.completeAllCases;
-      dom.answerSlots.classList.add('is-error');
-      dom.answerSlots.classList.remove('shake');
-      void dom.answerSlots.offsetWidth;
-      dom.answerSlots.classList.add('shake');
+    if (!controller.isComplete()) {
+      controller.showIncomplete();
+      updateQuestionSubmitButton();
       return;
     }
 
-    if (A.isAcceptedQuestionEntry(question, value, attempt.questionHintIndex)) {
+    const value = controller.getAnswer();
+    if (A.isAcceptedAnswer(question, value)) {
       attempt.statuses[attempt.questionIndex] = 'correct';
       attempt.earned[attempt.questionIndex] = question.rewardLetter;
       renderLiveCollection();
@@ -207,21 +175,20 @@
   }
 
   function missQuestion(skipped) {
-    const dom = M.ui.dom;
     const attempt = state.attempt;
     const question = currentQuestion();
     if (!attempt || !question) return;
     attempt.statuses[attempt.questionIndex] = 'missed';
     attempt.earned[attempt.questionIndex] = null;
     attempt.lives -= 1;
-    attempt.defeatContext = { type: 'question', answer: question.answer };
-    C.renderLives(dom.lives, attempt.lives);
+    attempt.defeatContext = { type: 'question' };
+    C.renderLives(M.ui.dom.lives, attempt.lives);
     renderLiveCollection();
 
     openFeedback({
       correct: false,
       title: skipped ? M.data.copy.skippedTitle : M.data.copy.wrongTitle,
-      copy: `La réponse était : ${question.answer}`,
+      copy: skipped ? M.data.copy.skippedCopy : M.data.copy.wrongCopy,
       letter: null,
       detail: attempt.lives > 0 ? `Il vous reste ${attempt.lives} vie${attempt.lives > 1 ? 's' : ''}.` : M.data.copy.noLives
     }, attempt.lives > 0 ? advanceAfterQuestion : showDefeat);
@@ -240,6 +207,8 @@
   function showFinalStage() {
     const dom = M.ui.dom;
     const attempt = state.attempt;
+    state.questionController?.destroy?.();
+    state.questionController = null;
     attempt.finalEntry = '';
     C.renderLives(dom.finalLives, attempt.lives);
     renderFinalRack();
@@ -254,7 +223,7 @@
     const attempt = state.attempt;
     if (!attempt) return;
     if (attempt.finalEntry.length < M.config.questionsPerLevel) {
-      dom.finalMessage.textContent = M.data.copy.completeSevenCases;
+      dom.finalMessage.textContent = M.data.copy.completeAllCases;
       dom.finalSlots.classList.add('is-error');
       dom.finalSlots.classList.remove('shake');
       void dom.finalSlots.offsetWidth;
@@ -287,6 +256,11 @@
     }, M.config.finalRetryResetMs);
   }
 
+  function nextLevelAfter(level) {
+    const currentIndex = M.data.levels.findIndex((item) => item.id === level.id);
+    return currentIndex >= 0 ? M.data.levels[currentIndex + 1] || null : null;
+  }
+
   function completeLevel() {
     const dom = M.ui.dom;
     const attempt = state.attempt;
@@ -298,7 +272,7 @@
     C.renderStars(dom.victoryStars, stars, true);
     dom.victoryCopy.textContent = `${stars} étoile${stars > 1 ? 's' : ''} · ${attempt.earned.filter(Boolean).length} lettre${attempt.earned.filter(Boolean).length > 1 ? 's' : ''} collectée${attempt.earned.filter(Boolean).length > 1 ? 's' : ''}`;
 
-    const next = M.data.levels.find((level) => level.id === attempt.level.id + 1);
+    const next = nextLevelAfter(attempt.level);
     dom.nextLevel.hidden = !next;
     dom.nextLevel.dataset.levelId = next ? String(next.id) : '';
     populateConfetti();
@@ -312,7 +286,7 @@
     if (!attempt) return;
     const fromQuestion = attempt.defeatContext?.type === 'question';
     dom.defeatReason.textContent = fromQuestion ? 'Vous avez perdu vos trois vies pendant les questions.' : 'Vos propositions du mot mystère ont épuisé vos vies.';
-    dom.defeatAnswer.textContent = fromQuestion && attempt.defeatContext.answer ? `Dernière réponse : ${attempt.defeatContext.answer}` : '';
+    dom.defeatAnswer.textContent = '';
     C.renderWord(dom.defeatWord, attempt.level.word);
     populateRain();
     S.showScreen('defeat');
@@ -409,7 +383,7 @@
     dom.feedbackContinue.addEventListener('click', closeFeedback);
     document.querySelector('#replay-level').addEventListener('click', () => startLevel(state.attempt.level.id));
     document.querySelector('#retry-level').addEventListener('click', () => startLevel(state.attempt.level.id));
-    dom.nextLevel.addEventListener('click', () => startLevel(Number(dom.nextLevel.dataset.levelId)));
+    dom.nextLevel.addEventListener('click', () => startLevel(dom.nextLevel.dataset.levelId));
 
     document.querySelector('#home-reset').addEventListener('click', () => { dom.confirmOverlay.hidden = false; document.querySelector('#cancel-reset').focus(); });
     document.querySelector('#cancel-reset').addEventListener('click', () => { dom.confirmOverlay.hidden = true; });
@@ -418,8 +392,10 @@
     dom.missionList.addEventListener('click', (event) => {
       if (event.target.closest('#claim-mission')) claimMission();
     });
+    dom.shopGrid.addEventListener('click', (event) => {
+      if (event.target.closest('[data-shop-pack]')) S.showToast(M.data.copy.shopToast);
+    });
 
-    dom.answerSlots.addEventListener('click', () => dom.answerSlots.focus());
     dom.finalSlots.addEventListener('click', () => dom.finalSlots.focus());
     dom.splash.addEventListener('click', dismissSplash);
     window.setTimeout(dismissSplash, M.config.splashDurationMs);
@@ -455,10 +431,8 @@
     currentQuestion,
     startLevel,
     renderQuestion,
-    renderQuestionSlots,
     renderLiveCollection,
     updateQuestionSubmitButton,
-    keyboardModeMax,
     handleKey,
     submitQuestion,
     submitFinalWord,

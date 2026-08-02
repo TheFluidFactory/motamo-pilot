@@ -2,56 +2,80 @@
   'use strict';
   const M = window.Motamo;
   const state = M.core.state;
-  const { renderStars, createMissionCard, createTutorialCard } = M.ui.components;
+  const { renderStars, createMissionCard, createTutorialCard, createShopPack } = M.ui.components;
+  const { svgUse } = M.core.utils;
 
   function completedCount() {
     return M.data.levels.filter((level) => Number(state.progress.stars[level.id] || 0) > 0).length;
   }
 
+  function createLevelTile(group, number, level) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'level-tile';
+
+    const numberLabel = document.createElement('span');
+    numberLabel.className = 'level-number';
+    numberLabel.textContent = String(number);
+    button.append(numberLabel);
+
+    const tileStars = document.createElement('span');
+    tileStars.className = 'level-tile-stars';
+    renderStars(tileStars, level ? Number(state.progress.stars[level.id] || 0) : 0);
+    button.append(tileStars);
+
+    if (level) {
+      button.classList.add('is-playable');
+      if (Number(state.progress.stars[level.id] || 0) > 0) button.classList.add('is-complete');
+      button.setAttribute('aria-label', `${group.label}, niveau ${number}`);
+      button.addEventListener('click', () => M.game.engine.startLevel(level.id));
+    } else {
+      button.disabled = true;
+      if (group.locked) {
+        const lock = svgUse('i-lock', 'level-lock');
+        button.append(lock);
+        button.setAttribute('aria-label', `${group.label}, niveau ${number}, verrouillé`);
+      } else {
+        button.setAttribute('aria-label', `${group.label}, niveau ${number}, bientôt disponible`);
+      }
+    }
+    return button;
+  }
+
   function renderLevels() {
     const dom = M.ui.dom;
     const completed = completedCount();
-    dom.globalProgressText.textContent = `${completed}/${M.data.levels.length} terminés`;
-    dom.globalProgressFill.style.width = `${(completed / M.data.levels.length) * 100}%`;
+    const total = M.data.levels.length;
+    dom.globalProgressText.textContent = `${completed}/${total} terminés`;
+    dom.globalProgressFill.style.width = `${total ? (completed / total) * 100 : 0}%`;
+    dom.globalProgressTrack.setAttribute('aria-valuemax', String(total));
     dom.globalProgressTrack.setAttribute('aria-valuenow', String(completed));
     dom.difficultyList.replaceChildren();
 
     M.config.difficultyGroups.forEach((group) => {
-      const level = M.data.levels.find((candidate) => candidate.difficulty === group.key);
-      if (!level) return;
-      const stars = Number(state.progress.stars[level.id] || 0);
+      const levels = M.data.levels.filter((level) => level.difficulty === group.key);
+      const levelByNumber = new Map(levels.map((level) => [level.levelNumber, level]));
 
       const section = document.createElement('section');
       section.className = `difficulty-section ${group.className}`;
+
       const head = document.createElement('div');
       head.className = 'difficulty-head';
       const title = document.createElement('h3');
-      title.innerHTML = `<span>${group.label}</span> · ${level.title}`;
-      const starsBox = document.createElement('div');
-      starsBox.className = 'difficulty-stars';
-      renderStars(starsBox, stars);
+      const titleText = document.createElement('span');
+      titleText.textContent = group.label;
+      title.append(titleText);
+      if (group.locked) title.append(svgUse('i-lock', 'difficulty-lock'));
       const description = document.createElement('p');
-      description.textContent = M.data.copy.levelsPreview;
-      head.append(title, starsBox, description);
+      description.textContent = group.description;
+      head.append(title, description);
 
       const grid = document.createElement('div');
       grid.className = 'level-grid';
       for (let number = 1; number <= M.config.levelsPerDifficulty; number += 1) {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = 'level-tile';
-        button.textContent = String(number);
-        if (number === 1) {
-          button.classList.add('is-playable');
-          if (stars > 0) button.classList.add('is-complete');
-          button.setAttribute('aria-label', `${group.label}, niveau 1 : ${level.title}`);
-          button.addEventListener('click', () => M.game.engine.startLevel(level.id));
-        } else {
-          button.disabled = true;
-          button.setAttribute('aria-label', `${group.label}, niveau ${number}, bientôt disponible`);
-        }
-        grid.append(button);
+        grid.append(createLevelTile(group, number, levelByNumber.get(number)));
       }
+
       section.append(head, grid);
       dom.difficultyList.append(section);
     });
@@ -74,6 +98,11 @@
     }));
   }
 
+  function renderShop() {
+    const dom = M.ui.dom;
+    dom.shopGrid.replaceChildren(...M.data.shop.packs.map(createShopPack));
+  }
+
   function showToast(message) {
     const dom = M.ui.dom;
     window.clearTimeout(state.toastTimer);
@@ -84,7 +113,7 @@
 
   function focusScreen(name) {
     const dom = M.ui.dom;
-    if (name === 'game') dom.answerSlots.focus({ preventScroll: true });
+    if (name === 'game') state.questionController?.focus?.();
     else if (name === 'final') dom.finalSlots.focus({ preventScroll: true });
     else dom.screens.find((screen) => screen.dataset.screen === name)?.querySelector('button:not([disabled]), [tabindex="0"]')?.focus({ preventScroll: true });
   }
@@ -99,9 +128,19 @@
     });
     if (name === 'levels') renderLevels();
     if (name === 'missions') renderMissions();
+    if (name === 'shop') renderShop();
     M.game.engine?.updateQuestionSubmitButton?.();
     if (options.focus !== false) window.requestAnimationFrame(() => focusScreen(name));
   }
 
-  M.ui.screens = Object.freeze({ completedCount, renderLevels, renderMissions, renderTutorial, showToast, showScreen, focusScreen });
+  M.ui.screens = Object.freeze({
+    completedCount,
+    renderLevels,
+    renderMissions,
+    renderTutorial,
+    renderShop,
+    showToast,
+    showScreen,
+    focusScreen
+  });
 })();

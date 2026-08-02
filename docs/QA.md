@@ -1,29 +1,30 @@
-# QA record
+# QA — pilote v1 étendu
 
-The refactored pack was checked against the working clean build.
+## Vérifications automatisées effectuées
 
-## Behaviour tested
+- Syntaxe de tous les fichiers JavaScript avec `node --check`.
+- Validation des quatre niveaux et des 28 questions.
+- Vérification des réponses principales et variantes acceptées.
+- Vérification des banques d’anagrammes, y compris les lettres répétées.
+- Vérification des récompenses et des mots finaux.
+- Parcours complet du niveau BAVARDE jusqu’à la victoire avec 3 étoiles.
+- Validation du mot final BAVARDE, qui contient deux lettres A.
+- Réponse clavier avec indice prédéfini.
+- Indice identique après redémarrage du niveau.
+- Choix multiple : sélection, activation du bouton et bonne réponse.
+- Anagramme : placement par toucher et glisser-déposer, puis validation.
+- Mauvaise réponse sans révélation de la solution.
+- Rendu des quatre groupes de niveaux, des étoiles par niveau, du pack Premium et des quatre cartes boutique.
+- Absence d’erreur JavaScript pendant les parcours testés.
 
-- Correct answers open the original French `Bonne réponse !` feedback.
-- Incorrect answers open the original French `Mauvaise réponse` feedback.
-- The helper letter is never placed in the first answer block.
-- The validation button is disabled and muted while incomplete.
-- The validation button becomes active when every remaining letter is entered.
-- All seven questions in the easy pilot complete successfully.
-- The final word `FORMULE` completes the level and opens the victory screen.
-- The accepted alternative `FRAYEUR` is still accepted.
-- Missions are generated from centralized mission data.
-- How to Play cards are generated from centralized tutorial data.
+## Parcours manuel conseillé après publication
 
-## Visual comparison
-
-Screenshots of Home, Levels, Missions, How to Play and the question screen were compared with the working clean build at 390 × 844 pixels. The pixel difference was 0 for all five screens.
-
-## Responsive checks
-
-No horizontal overflow or JavaScript errors were found at:
-
-- 320 × 700
-- 390 × 844
-- 768 × 900
-- 1280 × 900
+1. Ouvrir Facile niveau 2.
+2. Vérifier que VENT affiche toujours le même indice N.
+3. Vérifier le choix multiple D.
+4. Vérifier la charade et son clavier fixe.
+5. Tester une anagramme par toucher puis par glisser-déposer.
+6. Donner une mauvaise réponse et vérifier que la solution n’apparaît pas.
+7. Terminer le niveau et saisir BAVARDE.
+8. Revenir aux niveaux et vérifier les étoiles sous le niveau 2.
+9. Ouvrir la Boutique et toucher un prix : seul un message d’aperçu doit apparaître.
