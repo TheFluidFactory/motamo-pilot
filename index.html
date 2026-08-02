@@ -7,6 +7,11 @@
   <meta name="description" content="Pilote du jeu de lettres MOTAMO — mode Classique solo.">
   <title>MOTAMO — Pilote solo</title>
   <link rel="stylesheet" href="css/styles.css">
+  <style>
+    /* Keep the splash logo comfortably inside the app frame on every screen size. */
+    .splash-brand{width:min(100%,var(--app-max));max-width:var(--app-max);padding-inline:clamp(1.25rem,5vw,2rem)}
+    .brand-logo-splash{width:min(100%,22rem);max-width:22rem;max-height:55dvh;margin-inline:auto}
+  </style>
   <script src="js/data.js" defer></script>
   <script src="js/app.js" defer></script>
 </head>
@@ -40,14 +45,13 @@
     </div>
 
     <main class="app" id="app">
-      <section class="screen screen-home is-active" data-screen="home" aria-labelledby="home-title">
+      <section class="screen screen-home is-active" data-screen="home" aria-label="Accueil MOTAMO">
         <button class="round-control home-reset" id="home-reset" type="button" aria-label="Réinitialiser la progression">
           <svg class="icon"><use href="#i-reset"></use></svg>
         </button>
 
         <div class="home-content">
           <img class="brand-logo brand-logo-home" src="assets/motamo-logo.png" alt="MOTAMO" />
-          <h1 class="sr-only" id="home-title">MOTAMO</h1>
           <p class="home-copy">Répondez, gagnez des lettres et retrouvez le mot mystère.</p>
 
           <button class="button button-primary button-large home-play" id="play-button" type="button">
