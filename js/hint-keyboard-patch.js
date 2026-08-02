@@ -7,7 +7,6 @@
     const answerSlots = document.querySelector('#answer-slots');
     const feedbackOverlay = document.querySelector('#feedback-overlay');
     const confirmOverlay = document.querySelector('#confirm-overlay');
-    const submitQuestionButton = document.querySelector('#submit-question');
 
     if (!gameScreen || !gameQuestion || !answerSlots) return;
 
@@ -46,6 +45,18 @@
       .keyboard-row .key.action:active,
       .keyboard-row .key.action.is-pressed{
         box-shadow:0 1px 0 #8c4e04,inset 0 1px 0 rgba(255,255,255,.3)!important;
+      }
+      #submit-question.answer-submit{
+        background:linear-gradient(180deg,#8490a9,#5e6a83)!important;
+        box-shadow:0 6px 0 #3d475d,0 10px 18px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.18)!important;
+        opacity:.62;
+        cursor:not-allowed;
+      }
+      #submit-question.answer-submit.is-ready{
+        background:linear-gradient(180deg,#35c86a,#168943)!important;
+        box-shadow:0 6px 0 #0c5c2d,0 10px 20px rgba(19,153,72,.3),inset 0 1px 0 rgba(255,255,255,.24)!important;
+        opacity:1;
+        cursor:pointer;
       }
     `;
     document.head.append(style);
@@ -116,6 +127,24 @@
       return beforeHint + hintLetter() + state.userEntry.slice(state.hintIndex);
     }
 
+    function requiredUserLength() {
+      if (!state.question) return 0;
+      return Math.max(0, normalize(state.question.answer).length - (state.hintIndex === null ? 0 : 1));
+    }
+
+    function answerIsReady() {
+      return Boolean(state.question) && state.userEntry.length === requiredUserLength();
+    }
+
+    function updateSubmitButtonState() {
+      const button = document.querySelector('#submit-question');
+      if (!button) return;
+      const ready = answerIsReady();
+      button.disabled = !ready;
+      button.classList.toggle('is-ready', ready);
+      button.setAttribute('aria-disabled', String(!ready));
+    }
+
     function dispatchToGame(key) {
       const browserKey = key === 'BACKSPACE' ? 'Backspace' : key;
       document.dispatchEvent(new KeyboardEvent('keydown', { key: browserKey, bubbles: true }));
@@ -128,6 +157,7 @@
       slot.textContent = hintLetter();
       slot.classList.add('filled', 'hint-letter');
       slot.setAttribute('aria-label', `Lettre indice : ${hintLetter()}`);
+      updateSubmitButtonState();
     }
 
     function syncGameEntry() {
@@ -137,6 +167,7 @@
       for (const letter of next) dispatchToGame(letter);
       state.syncedEntry = next;
       state.syncing = false;
+      updateSubmitButtonState();
       window.requestAnimationFrame(applyHintVisual);
     }
 
@@ -146,6 +177,7 @@
       state.hintIndex = length > 1 ? 1 + Math.floor(Math.random() * (length - 1)) : null;
       state.userEntry = '';
       state.syncedEntry = '';
+      updateSubmitButtonState();
       window.requestAnimationFrame(applyHintVisual);
     }
 
@@ -167,11 +199,26 @@
         return;
       }
 
+      updateSubmitButtonState();
       window.requestAnimationFrame(applyHintVisual);
     }
 
     function gameIsActive() {
       return !gameScreen.hidden && gameScreen.classList.contains('is-active');
+    }
+
+    function submitReadyAnswer() {
+      if (!gameIsActive() || !answerIsReady()) {
+        updateSubmitButtonState();
+        return;
+      }
+
+      syncGameEntry();
+      window.setTimeout(() => {
+        state.syncing = true;
+        dispatchToGame('ENTER');
+        state.syncing = false;
+      }, 0);
     }
 
     document.addEventListener('keydown', (event) => {
@@ -182,7 +229,7 @@
       if (!state.question || state.hintIndex === null) return;
 
       let handled = false;
-      const requiredLength = normalize(state.question.answer).length - 1;
+      const requiredLength = requiredUserLength();
 
       if (event.key === 'Backspace') {
         state.userEntry = state.userEntry.slice(0, -1);
@@ -200,37 +247,31 @@
       if (!handled) return;
       event.preventDefault();
       event.stopImmediatePropagation();
-      syncGameEntry();
 
       if (event.key === 'Enter') {
-        window.setTimeout(() => {
-          state.syncing = true;
-          dispatchToGame('ENTER');
-          state.syncing = false;
-        }, 0);
+        submitReadyAnswer();
+        return;
       }
+
+      syncGameEntry();
     }, true);
 
-    if (submitQuestionButton) {
-      submitQuestionButton.addEventListener('click', (event) => {
-        if (!gameIsActive()) return;
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        if (!state.question) initialiseQuestion();
-        syncGameEntry();
-        window.setTimeout(() => {
-          state.syncing = true;
-          dispatchToGame('ENTER');
-          state.syncing = false;
-        }, 0);
-      }, true);
-    }
+    document.addEventListener('click', (event) => {
+      const button = event.target.closest('#submit-question');
+      if (!button) return;
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      submitReadyAnswer();
+    }, true);
 
     const questionObserver = new MutationObserver(initialiseQuestion);
     questionObserver.observe(gameQuestion, { childList: true, subtree: true, characterData: true });
 
     const slotsObserver = new MutationObserver(() => window.requestAnimationFrame(applyHintVisual));
     slotsObserver.observe(answerSlots, { childList: true });
+
+    const buttonObserver = new MutationObserver(updateSubmitButtonState);
+    buttonObserver.observe(document.body, { childList: true, subtree: true });
 
     document.querySelectorAll('.keyboard-panel').forEach((panel) => {
       const keyboardObserver = new MutationObserver(configureBackspaceKeys);
@@ -239,7 +280,10 @@
 
     configureBackspaceKeys();
     initialiseQuestion();
-    window.setTimeout(configureBackspaceKeys, 0);
+    window.setTimeout(() => {
+      configureBackspaceKeys();
+      updateSubmitButtonState();
+    }, 0);
   }
 
   if (document.readyState === 'loading') {
