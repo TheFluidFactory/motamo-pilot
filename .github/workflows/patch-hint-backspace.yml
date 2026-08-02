@@ -1,0 +1,221 @@
+name: Patch hint and backspace
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.issue.title == 'Run MOTAMO hint and backspace patch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply gameplay and keyboard update
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          app_path = Path('js/app.js')
+          app = app_path.read_text(encoding='utf-8')
+
+          old_row = "    ['BACKSPACE','W','X','C','V','B','N','ENTER']"
+          new_row = "    ['W','X','C','V','B','N','BACKSPACE']"
+          if old_row in app:
+              app = app.replace(old_row, new_row, 1)
+          elif new_row not in app:
+              raise SystemExit('Keyboard row marker not found')
+
+          old_attempt = "      questionEntry: '',\n      finalEntry: '',"
+          new_attempt = "      questionEntry: '',\n      questionHintIndex: null,\n      finalEntry: '',"
+          if old_attempt in app:
+              app = app.replace(old_attempt, new_attempt, 1)
+          elif 'questionHintIndex: null' not in app:
+              raise SystemExit('Attempt state marker not found')
+
+          current_question_marker = '''  function currentQuestion() {
+    return attempt?.level.questions[attempt.questionIndex] || null;
+  }
+'''
+
+          hint_helpers = '''  function currentQuestion() {
+    return attempt?.level.questions[attempt.questionIndex] || null;
+  }
+
+  function normalizedQuestionAnswers(question) {
+    return [question.answer, ...(question.acceptedAnswers || [])].map(normalizeLettersOnly);
+  }
+
+  function chooseQuestionHintIndex(question) {
+    const length = countLetters(question.answer);
+    if (length < 2) return null;
+    return 1 + Math.floor(Math.random() * (length - 1));
+  }
+
+  function answerPositionForEntryIndex(entryIndex) {
+    const hintIndex = attempt?.questionHintIndex;
+    if (hintIndex === null || hintIndex === undefined) return entryIndex;
+    return entryIndex >= hintIndex ? entryIndex + 1 : entryIndex;
+  }
+
+  function matchingQuestionAnswers(question) {
+    const entry = [...(attempt?.questionEntry || '')];
+    return normalizedQuestionAnswers(question).filter((answer) =>
+      entry.every((letter, entryIndex) => answer[answerPositionForEntryIndex(entryIndex)] === letter)
+    );
+  }
+
+  function currentQuestionHintLetter(question) {
+    const hintIndex = attempt?.questionHintIndex;
+    if (hintIndex === null || hintIndex === undefined) return '';
+    const matching = matchingQuestionAnswers(question);
+    const selected = matching[0] || normalizedQuestionAnswers(question)[0];
+    return selected[hintIndex] || '';
+  }
+
+  function isAcceptedQuestionEntry(question) {
+    const entered = attempt?.questionEntry || '';
+    return normalizedQuestionAnswers(question).some((answer) => {
+      const withoutHint = [...answer]
+        .filter((_, index) => index !== attempt.questionHintIndex)
+        .join('');
+      return withoutHint === entered;
+    });
+  }
+
+  function renderQuestionSlots() {
+    const question = currentQuestion();
+    if (!attempt || !question) return;
+
+    const container = elements.answerSlots;
+    const count = countLetters(question.answer);
+    const hintIndex = attempt.questionHintIndex;
+    const hintLetter = currentQuestionHintLetter(question);
+    const entry = [...attempt.questionEntry];
+
+    container.replaceChildren();
+    container.style.setProperty('--slot-count', String(count));
+    container.style.maxWidth = `${Math.min(360, count * 46)}px`;
+
+    for (let index = 0; index < count; index += 1) {
+      const slot = document.createElement('span');
+      slot.className = 'answer-slot';
+
+      if (index === hintIndex) {
+        slot.textContent = hintLetter;
+        slot.classList.add('filled', 'hint-letter');
+        slot.setAttribute('aria-label', `Lettre indice : ${hintLetter}`);
+      } else {
+        const entryIndex = index < hintIndex ? index : index - 1;
+        const letter = entry[entryIndex];
+        if (letter) {
+          slot.textContent = letter;
+          slot.classList.add('filled');
+        } else if (entryIndex === entry.length) {
+          slot.classList.add('next');
+        }
+      }
+      container.append(slot);
+    }
+
+    container.setAttribute(
+      'aria-label',
+      `Réponse : ${attempt.questionEntry || 'vide'}, une lettre indice offerte, ${attempt.questionEntry.length} lettre${attempt.questionEntry.length > 1 ? 's' : ''} saisie${attempt.questionEntry.length > 1 ? 's' : ''}`
+    );
+  }
+'''
+
+          if 'function renderQuestionSlots()' not in app:
+              if current_question_marker not in app:
+                  raise SystemExit('Current question marker not found')
+              app = app.replace(current_question_marker, hint_helpers, 1)
+
+          old_reset = "    attempt.questionEntry = '';\n\n    elements.hudLevel"
+          new_reset = "    attempt.questionEntry = '';\n    attempt.questionHintIndex = chooseQuestionHintIndex(question);\n\n    elements.hudLevel"
+          if old_reset in app:
+              app = app.replace(old_reset, new_reset, 1)
+          elif 'attempt.questionHintIndex = chooseQuestionHintIndex(question);' not in app:
+              raise SystemExit('Question reset marker not found')
+
+          old_initial_render = "    renderSlots(elements.answerSlots, countLetters(question.answer), '', 'Réponse');"
+          if old_initial_render in app:
+              app = app.replace(old_initial_render, '    renderQuestionSlots();', 1)
+          elif '    renderQuestionSlots();' not in app:
+              raise SystemExit('Initial slot render marker not found')
+
+          old_max = "    if (mode === 'question') return countLetters(currentQuestion()?.answer || '');"
+          new_max = "    if (mode === 'question') return Math.max(0, countLetters(currentQuestion()?.answer || '') - (attempt?.questionHintIndex === null ? 0 : 1));"
+          if old_max in app:
+              app = app.replace(old_max, new_max, 1)
+          elif new_max not in app:
+              raise SystemExit('Keyboard max marker not found')
+
+          old_set_render = "      renderSlots(elements.answerSlots, max, clean, 'Réponse');"
+          if old_set_render in app:
+              app = app.replace(old_set_render, '      renderQuestionSlots();', 1)
+          elif app.count('      renderQuestionSlots();') < 1:
+              raise SystemExit('Question entry render marker not found')
+
+          old_submit = '''    const expected = countLetters(question.answer);
+    const value = attempt.questionEntry;
+
+    if (value.length < expected) {'''
+          new_submit = '''    const expected = countLetters(question.answer) - (attempt.questionHintIndex === null ? 0 : 1);
+    const value = attempt.questionEntry;
+
+    if (value.length < expected) {'''
+          if old_submit in app:
+              app = app.replace(old_submit, new_submit, 1)
+          elif new_submit not in app:
+              raise SystemExit('Question submit length marker not found')
+
+          old_accept = '    if (isAcceptedAnswer(question, value)) {'
+          new_accept = '    if (isAcceptedQuestionEntry(question)) {'
+          if old_accept in app:
+              app = app.replace(old_accept, new_accept, 1)
+          elif new_accept not in app:
+              raise SystemExit('Question acceptance marker not found')
+
+          old_backspace = '''          button.classList.add('action');
+          button.setAttribute('aria-label', 'Effacer la dernière lettre');
+          button.append(svgUse('i-delete'));'''
+          new_backspace = '''          button.classList.add('action');
+          button.setAttribute('aria-label', 'Effacer la dernière lettre');
+          button.textContent = '‹';'''
+          if old_backspace in app:
+              app = app.replace(old_backspace, new_backspace, 1)
+          elif "button.textContent = '‹';" not in app:
+              raise SystemExit('Backspace icon marker not found')
+
+          app_path.write_text(app, encoding='utf-8')
+
+          index_path = Path('index.html')
+          html = index_path.read_text(encoding='utf-8')
+          css_patch = '''
+    /* Hint tile and right-side backspace styling. */
+    .answer-slot.hint-letter{border-color:#ffd45a!important;background:linear-gradient(180deg,#fff8ca,#f3cf63)!important;color:#3a2b06!important;box-shadow:0 4px 0 #b88a18,0 0 0 3px rgba(255,200,61,.15),0 7px 12px rgba(0,0,0,.22)!important}
+    .answer-slot.hint-letter::after{content:"✦";position:absolute;top:-.35rem;right:-.2rem;display:grid;place-items:center;width:.9rem;height:.9rem;border-radius:999px;background:var(--purple-600);color:#fff;font-size:.52rem;box-shadow:0 3px 7px rgba(0,0,0,.28)}
+    .key.action{flex:1.25!important;background:linear-gradient(180deg,#f6be35,#d9820b)!important;color:#10244d!important;font-size:1.7rem!important;line-height:1!important;box-shadow:0 4px 0 #8c4e04,inset 0 1px 0 rgba(255,255,255,.38)!important}
+    .key.action:active,.key.action.is-pressed{box-shadow:0 1px 0 #8c4e04,inset 0 1px 0 rgba(255,255,255,.3)!important}
+'''
+          if 'Hint tile and right-side backspace styling' not in html:
+              if '  </style>' not in html:
+                  raise SystemExit('Style closing marker not found')
+              html = html.replace('  </style>', css_patch + '  </style>', 1)
+          index_path.write_text(html, encoding='utf-8')
+          PY
+
+      - name: Check JavaScript syntax
+        run: node --check js/app.js
+
+      - name: Commit live update
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html js/app.js
+          git diff --cached --quiet || (git commit -m "Move backspace and add answer hint letter" && git push)
