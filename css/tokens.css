@@ -1,0 +1,18 @@
+:root{
+  color-scheme:dark;
+  --navy-950:#02091c;--navy-900:#06132d;--navy-850:#081a3d;--navy-800:#0d2859;--navy-750:#12346c;
+  --blue-700:#0750a8;--blue-600:#0868d8;--blue-500:#0b83ef;
+  --purple-800:#3c157f;--purple-700:#5320ad;--purple-600:#6e28d2;--purple-500:#8434ef;--purple-400:#a264ff;
+  --green-800:#07512e;--green-700:#0d6b3d;--green-600:#12924e;--green-500:#22ad5a;
+  --amber-700:#c97605;--amber-600:#e88e08;--amber-500:#f5ad16;--amber-400:#ffc83d;
+  --red-800:#7b0d1f;--red-700:#a31627;--red-600:#db2635;--red-500:#f13a48;
+  --cream:#fff9ef;--cream-2:#f6eadb;--ink:#161827;--white:#fff;--muted:#b8c5e3;--muted-2:#8fa0c8;
+  --line:rgba(255,255,255,.13);--surface:rgba(8,28,66,.88);--surface-soft:rgba(14,45,95,.72);
+  --shadow:0 26px 60px rgba(0,0,0,.42),0 4px 14px rgba(0,0,0,.24);--shadow-small:0 10px 24px rgba(0,0,0,.25);
+  --glow-purple:0 12px 30px rgba(132,52,239,.34),inset 0 1px 0 rgba(255,255,255,.25);
+  --glow-blue:0 12px 30px rgba(11,131,239,.28),inset 0 1px 0 rgba(255,255,255,.22);
+  --glow-green:0 12px 30px rgba(34,173,90,.28),inset 0 1px 0 rgba(255,255,255,.22);
+  --radius-sm:.72rem;--radius-md:1rem;--radius-lg:1.35rem;--radius-xl:1.8rem;--app-max:460px;--touch:46px;
+  --font-display:"Arial Narrow","Aptos Narrow",Impact,Haettenschweiler,sans-serif;
+  --font-body:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+}
