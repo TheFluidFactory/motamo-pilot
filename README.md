@@ -50,3 +50,8 @@ motamo-pilot/
 Les niveaux et questions se trouvent dans `js/data.js`.
 
 Toutes les variantes d’une réponse doivent avoir le même nombre de lettres que la réponse principale, car le nombre de cases est fixe. Les accents ne sont pas nécessaires pour répondre.
+
+
+## Logo
+
+The supplied MOTAMO logo is stored at `assets/motamo-logo.png` and is used on the splash and home screens.
