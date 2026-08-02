@@ -4,13 +4,6 @@
   const C = M.ui.components;
   const { normalizeLettersOnly } = M.core.utils;
 
-  function countByLetter(value) {
-    return [...normalizeLettersOnly(value)].reduce((counts, letter) => {
-      counts.set(letter, (counts.get(letter) || 0) + 1);
-      return counts;
-    }, new Map());
-  }
-
   function createFinalWordBuilder(context) {
     const {
       slots,
@@ -21,7 +14,6 @@
       message,
       answerLength,
       earnedLetters,
-      requiredWord,
       onChange
     } = context;
 
@@ -33,9 +25,6 @@
       .map(normalizeLettersOnly)
       .filter((letter) => letter.length === 1);
 
-    const collectedCounts = countByLetter(collectedLetters.join(''));
-    const requiredCounts = countByLetter(requiredWord || '');
-
     const collectedSources = collectedLetters.map((letter, index) => ({
       id: `collected-${index}`,
       letter,
@@ -43,23 +32,12 @@
       order: index
     }));
 
-    const alphabetSources = [];
-    [...M.config.alphabet].forEach((letter, alphabetIndex) => {
-      const alreadyCollected = collectedCounts.get(letter) || 0;
-      const required = requiredCounts.get(letter) || 0;
-      const baselineCopies = 1;
-      const additionalRequiredCopies = Math.max(0, required - alreadyCollected - baselineCopies);
-      const copyCount = baselineCopies + additionalRequiredCopies;
-
-      for (let copyIndex = 0; copyIndex < copyCount; copyIndex += 1) {
-        alphabetSources.push({
-          id: `alphabet-${letter}-${copyIndex}`,
-          letter,
-          kind: 'alphabet',
-          order: alphabetIndex * 10 + copyIndex
-        });
-      }
-    });
+    const alphabetSources = [...M.config.alphabet].map((letter, alphabetIndex) => ({
+      id: `alphabet-${letter}`,
+      letter,
+      kind: 'alphabet',
+      order: alphabetIndex
+    }));
 
     const allSources = [...collectedSources, ...alphabetSources];
     const sourceById = new Map(allSources.map((source) => [source.id, source]));
@@ -69,7 +47,14 @@
     }
 
     function isSourceInUse(sourceId) {
-      return entry.includes(sourceId) || activeDrag?.sourceId === sourceId;
+      const source = sourceById.get(sourceId);
+      if (!source) return false;
+
+      // Collected (yellow) tiles are finite: once placed, that exact tile is unavailable
+      // until it is removed from the answer. Alphabet (white) tiles are reusable, but
+      // temporarily disappear while being dragged so the drag never shows a static duplicate.
+      if (activeDrag?.sourceId === sourceId) return true;
+      return source.kind === 'collected' && entry.includes(sourceId);
     }
 
     function sourceAt(index) {

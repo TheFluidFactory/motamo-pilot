@@ -1,4 +1,4 @@
-# MOTAMO pilot v1.3 — upload report
+# MOTAMO pilot v1.4 — upload report
 
 ## Upload
 
@@ -6,18 +6,13 @@ Extract the ZIP and upload its contents directly to the repository root, replaci
 
 No build step, package installation or backend is required.
 
-## Changes from v1.2
+## Change from v1.3
 
-Only the two requested interface adjustments were made:
+Only the requested final-word inventory behaviour changed:
 
-1. **Final-word alphabet bank**
-   - `AUTRES LETTRES` now always displays the complete alphabet A–Z, including letters also present in `LETTRES GAGNÉES`.
-   - Tile dimensions and the seven-column layout are unchanged.
-   - Every displayed tile remains a finite source: once placed, that specific yellow or white tile disappears until removed from the answer.
-   - When a final word needs more copies of a letter than the collected tiles plus the complete alphabet provide, the builder adds only the extra copies required to keep the level solvable.
+- Yellow `LETTRES GAGNÉES` tiles remain finite. A yellow tile disappears after placement and returns only when removed from the answer.
+- White `AUTRES LETTRES` tiles are now reusable. The complete A–Z alphabet remains available after placement, allowing the same white letter to be used two, three or more times.
+- A white tile still disappears temporarily while it is actively being dragged, preventing the static duplicate effect. It reappears as soon as the drag ends.
+- Placed letters can still be tapped to remove them, dragged to another answer block, or dragged outside the answer row to remove them.
 
-2. **Tutorial page**
-   - The four existing tutorial cards and their images are unchanged.
-   - The three pills below them were removed.
-
-No gameplay, level, question, hint, shop, mission, navigation, purchase-preview or storage behaviour was changed.
+No question, level, hint, reward, tutorial, shop, mission, navigation, storage, visual styling or other gameplay behaviour was changed.
