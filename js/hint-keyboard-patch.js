@@ -7,6 +7,7 @@
     const answerSlots = document.querySelector('#answer-slots');
     const feedbackOverlay = document.querySelector('#feedback-overlay');
     const confirmOverlay = document.querySelector('#confirm-overlay');
+    const submitQuestionButton = document.querySelector('#submit-question');
 
     if (!gameScreen || !gameQuestion || !answerSlots) return;
 
@@ -209,6 +210,21 @@
         }, 0);
       }
     }, true);
+
+    if (submitQuestionButton) {
+      submitQuestionButton.addEventListener('click', (event) => {
+        if (!gameIsActive()) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        if (!state.question) initialiseQuestion();
+        syncGameEntry();
+        window.setTimeout(() => {
+          state.syncing = true;
+          dispatchToGame('ENTER');
+          state.syncing = false;
+        }, 0);
+      }, true);
+    }
 
     const questionObserver = new MutationObserver(initialiseQuestion);
     questionObserver.observe(gameQuestion, { childList: true, subtree: true, characterData: true });
