@@ -1,4 +1,4 @@
-# MOTAMO — pilote solo v1.1
+# MOTAMO — pilote solo v1.2
 
 Pack statique prêt à déposer à la racine du dépôt GitHub Pages.
 
@@ -42,12 +42,16 @@ Interactions actuellement enregistrées :
 
 Les indices des réponses clavier sont prédéfinis par `hintIndex`. La valeur doit être `null` pour une réponse d’une lettre. L’indice 0 est interdit.
 
+Dans cette version pilote, chaque `rewardLetter` doit correspondre à l’initiale de la réponse principale. Cette règle est centralisée par `rewardLettersUseAnswerInitial` dans `js/config.js` et vérifiée dans `js/game/answers.js`.
+
 ## Mot final
 
 Le mot final n’utilise plus le clavier AZERTY. Le joueur construit le mot en touchant ou en faisant glisser des lettres depuis :
 
 - la rangée des lettres gagnées ;
 - le reste de l’alphabet.
+
+Chaque tuile est une source unique. Lorsqu’elle est placée, elle disparaît de sa rangée d’origine et ne peut pas être utilisée une deuxième fois. Elle revient exactement dans sa banque lorsqu’elle est retirée de la réponse.
 
 Une lettre placée peut être retirée en la touchant ou en la faisant glisser hors des cases. Le composant est centralisé dans `js/game/final-word-builder.js`; les vies, la validation et la progression restent dans le moteur principal.
 

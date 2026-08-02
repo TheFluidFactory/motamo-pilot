@@ -29,11 +29,11 @@
       difficultyLabel: 'Facile',
       title: 'BAVARDE',
       word: 'BAVARDE',
-      scramble: ['A','D','B','E','V','A','R'],
+      scramble: ['V','D','B','A','R','E','A'],
       description: 'Nouveaux formats de questions du pilote.',
       questions: [
         {
-          id: 'bavarde-a',
+          id: 'bavarde-v',
           type: 'Compléter un titre',
           interaction: 'text',
           difficulty: 1,
@@ -41,7 +41,7 @@
           answer: 'Vent',
           acceptedAnswers: [],
           hintIndex: 2,
-          rewardLetter: 'A'
+          rewardLetter: 'V'
         },
         {
           id: 'bavarde-d',
@@ -72,36 +72,14 @@
           rewardLetter: 'B'
         },
         {
-          id: 'bavarde-e',
-          type: 'Mot caché',
+          id: 'bavarde-a1',
+          type: 'Double définition',
           interaction: 'text',
           difficulty: 1,
-          prompt: 'Quel animal de quatre lettres est caché au début du mot « château » ?',
-          answer: 'Chat',
+          prompt: 'Quel mot désigne à la fois un fruit vert et une personne qui défend un client au tribunal ?',
+          answer: 'Avocat',
           acceptedAnswers: [],
           hintIndex: 2,
-          rewardLetter: 'E'
-        },
-        {
-          id: 'bavarde-v',
-          type: 'Mot commun',
-          interaction: 'text',
-          difficulty: 1,
-          prompt: 'Quel mot complète ces trois expressions : ___ de soleil, ___ de vélo, ___ de supermarché ?',
-          answer: 'Rayon',
-          acceptedAnswers: [],
-          hintIndex: 2,
-          rewardLetter: 'V'
-        },
-        {
-          id: 'bavarde-a2',
-          type: 'Devinette',
-          interaction: 'text',
-          difficulty: 1,
-          prompt: 'Je monte et je descends, mais je ne bouge jamais. Qui suis-je ?',
-          answer: 'Escalier',
-          acceptedAnswers: [],
-          hintIndex: 3,
           rewardLetter: 'A'
         },
         {
@@ -109,11 +87,33 @@
           type: 'Mot commun',
           interaction: 'text',
           difficulty: 1,
-          prompt: 'Quel mot de trois lettres peut être de mer, de table ou fin ?',
-          answer: 'Sel',
+          prompt: 'Quel mot complète ces trois expressions : ___ de soleil, ___ de vélo, ___ de supermarché ?',
+          answer: 'Rayon',
           acceptedAnswers: [],
-          hintIndex: 1,
+          hintIndex: 2,
           rewardLetter: 'R'
+        },
+        {
+          id: 'bavarde-e',
+          type: 'Devinette',
+          interaction: 'text',
+          difficulty: 1,
+          prompt: 'Je monte et je descends, mais je ne bouge jamais. Qui suis-je ?',
+          answer: 'Escalier',
+          acceptedAnswers: [],
+          hintIndex: 3,
+          rewardLetter: 'E'
+        },
+        {
+          id: 'bavarde-a2',
+          type: 'Culture générale',
+          interaction: 'text',
+          difficulty: 1,
+          prompt: 'Quel insecte fabrique le miel et vit dans une ruche ?',
+          answer: 'Abeille',
+          acceptedAnswers: [],
+          hintIndex: 2,
+          rewardLetter: 'A'
         }
       ]
     },

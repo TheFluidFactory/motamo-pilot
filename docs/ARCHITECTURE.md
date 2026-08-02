@@ -18,14 +18,14 @@ Shared game engine
 lives / feedback / reward / next question
 ```
 
-Le mot final utilise un contrôleur séparé mais suit le même principe : `final-word-builder.js` collecte les lettres, tandis que `engine.js` garde la validation, les vies, la victoire et la défaite.
+Le mot final utilise un contrôleur séparé mais suit le même principe : `final-word-builder.js` gère un inventaire de sources uniques et leur position dans la réponse, tandis que `engine.js` garde la validation, les vies, la victoire et la défaite.
 
 ## Responsabilités
 
 - `js/data/` : contenu uniquement.
 - `js/question-types/` : collecte de la réponse uniquement.
 - `js/game/answers.js` : validation du contenu et des réponses.
-- `js/game/final-word-builder.js` : interaction tactile du mot final.
+- `js/game/final-word-builder.js` : inventaire unique, toucher, glisser-déposer et ordre des lettres du mot final.
 - `js/game/engine.js` : progression et conséquences.
 - `js/ui/` : rendu des écrans et composants communs.
 - `js/config.js` : règles et groupes globaux.

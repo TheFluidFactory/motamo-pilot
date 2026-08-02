@@ -69,8 +69,13 @@
 
       level.questions.forEach((question) => {
         const interaction = question.interaction || M.config.defaultQuestionInteraction;
-        if (!normalizeLettersOnly(question.answer)) throw new Error(`Réponse vide : ${question.id}.`);
-        if (normalizeLettersOnly(question.rewardLetter).length !== 1) throw new Error(`Lettre récompense invalide : ${question.id}.`);
+        const primaryAnswer = normalizeLettersOnly(question.answer);
+        const rewardLetter = normalizeLettersOnly(question.rewardLetter);
+        if (!primaryAnswer) throw new Error(`Réponse vide : ${question.id}.`);
+        if (rewardLetter.length !== 1) throw new Error(`Lettre récompense invalide : ${question.id}.`);
+        if (M.config.rewardLettersUseAnswerInitial && rewardLetter !== primaryAnswer[0]) {
+          throw new Error(`Dans ce pilote, la lettre gagnée doit être l'initiale de la réponse (${question.id}).`);
+        }
         if (interaction === 'text') validateTextQuestion(question);
         else if (interaction === 'multipleChoice') validateMultipleChoiceQuestion(question);
         else throw new Error(`Type d'interaction inconnu « ${interaction} » (${question.id}).`);

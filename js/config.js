@@ -14,6 +14,7 @@
     answerSlotWidthPx: 46,
     answerSlotsMaxWidthPx: 360,
     defaultQuestionInteraction: 'text',
+    rewardLettersUseAnswerInitial: true,
     alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
     keyboardRows: Object.freeze([
       Object.freeze(['A','Z','E','R','T','Y','U','I','O','P']),

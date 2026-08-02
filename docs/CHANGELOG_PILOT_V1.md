@@ -1,42 +1,45 @@
-# Changements du pack pilote v1.1
+# Changements du pack pilote v1.2
+
+## Lettres récompenses du pilote
+
+Dans cette version, chaque question donne l’initiale de sa réponse principale.
+
+Cette règle est maintenant vérifiée automatiquement au démarrage. Une incohérence entre la réponse et `rewardLetter` empêche le contenu invalide d’être chargé silencieusement.
+
+Les trois niveaux historiques respectaient déjà cette règle. Le niveau BAVARDE a été corrigé.
 
 ## Facile niveau 2 — BAVARDE
 
-Ordre des lettres récompenses : `A D B E V A R`.
+Ordre des lettres récompenses : `V D B A R E A`.
 
 Questions :
 
-1. Titre à compléter — `VENT` — clavier, indice prédéfini N.
-2. Position des lettres — `D` — choix multiple, sans indice.
-3. Charade — `BALEINE` — clavier, indice prédéfini E.
-4. Mot caché — `CHAT` — clavier, indice prédéfini A.
-5. Mot commun — `RAYON` — clavier, indice prédéfini Y.
-6. Devinette — `ESCALIER` — clavier, indice prédéfini A.
-7. Mot commun — `SEL` — clavier, indice prédéfini E.
+1. Titre à compléter — `VENT` — récompense V, indice prédéfini N.
+2. Position des lettres — `D` — récompense D, choix multiple sans indice.
+3. Charade — `BALEINE` — récompense B, indice prédéfini E.
+4. Double définition — `AVOCAT` — récompense A, indice prédéfini O.
+5. Mot commun — `RAYON` — récompense R, indice prédéfini Y.
+6. Devinette — `ESCALIER` — récompense E, indice prédéfini A.
+7. Culture générale — `ABEILLE` — récompense A, indice prédéfini E.
 
-Les quatre anciennes questions d’anagramme ont été retirées du pilote.
+Les sept initiales forment une anagramme de `BAVARDE`.
 
-## Mot final
+## Inventaire du mot final
 
-- Suppression du clavier sur la page du mot final.
-- Sept cases de réponse vides en haut.
-- Rangée séparée pour les lettres gagnées.
-- Fine ligne de séparation.
-- Alphabet restant sous les lettres gagnées.
-- Toucher ou glisser pour ajouter une lettre.
-- Toucher ou glisser hors des cases pour retirer une lettre.
-- La tuile source est masquée pendant le glissement.
-- Tuiles et cases légèrement agrandies.
-- Sources réutilisables afin de permettre les lettres répétées sans révéler leur nombre.
-
-## Choix multiple et niveaux
-
-- Suppression des marqueurs décoratifs A/B/C/D devant les réponses.
-- Agrandissement des sous-titres des blocs Facile, Intermédiaire, Difficile et Premium.
+- Chaque tuile gagnée ou alphabétique possède désormais une identité propre.
+- Une tuile placée disparaît de sa banque et ne peut pas être ajoutée une seconde fois.
+- Une tuile retirée revient dans sa position d’origine.
+- La source et la case de départ sont masquées pendant le glissement.
+- Toucher une lettre placée la retire.
+- La faire glisser hors de la rangée de réponse la retire également.
+- Déplacer une lettre vers une case occupée échange les deux lettres.
+- Les lettres répétées sont gérées avec des exemplaires distincts, sans rendre une même tuile réutilisable.
+- Lorsqu’une lettre répétée nécessaire n’a pas été gagnée, un exemplaire blanc correspondant reste disponible afin que le mot final reste résoluble.
 
 ## Préservé
 
 - Les trois niveaux historiques.
-- Les vies, récompenses, feedbacks, étoiles et sauvegarde locale.
+- Les vies, feedbacks, étoiles et sauvegarde locale.
 - Les indices clavier fixes.
+- Le choix multiple sans marqueurs A/B/C/D.
 - La boutique, les missions, le tutoriel et le pack Premium d’aperçu.

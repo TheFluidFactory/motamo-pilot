@@ -191,6 +191,7 @@
       message: dom.finalMessage,
       answerLength: M.config.questionsPerLevel,
       earnedLetters: attempt.earned.filter(Boolean),
+      requiredWord: attempt.level.word,
       onChange: updateFinalSubmitButton
     });
     updateFinalSubmitButton();

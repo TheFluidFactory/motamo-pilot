@@ -255,3 +255,10 @@ button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
   box-shadow:0 6px 0 #0c5c2d,0 10px 20px rgba(19,153,72,.3),inset 0 1px 0 rgba(255,255,255,.24);
   opacity:1;cursor:pointer
 }
+
+/* Pilot v1.2: a source tile exists in one place at a time. */
+.final-source-letter.is-used,
+.final-answer-slot.is-dragging-origin{
+  visibility:hidden;
+  pointer-events:none;
+}

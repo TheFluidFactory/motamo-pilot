@@ -4,6 +4,13 @@
   const C = M.ui.components;
   const { normalizeLettersOnly } = M.core.utils;
 
+  function countByLetter(value) {
+    return [...normalizeLettersOnly(value)].reduce((counts, letter) => {
+      counts.set(letter, (counts.get(letter) || 0) + 1);
+      return counts;
+    }, new Map());
+  }
+
   function createFinalWordBuilder(context) {
     const {
       slots,
@@ -14,39 +21,87 @@
       message,
       answerLength,
       earnedLetters,
+      requiredWord,
       onChange
     } = context;
 
-    let entry = Array(answerLength).fill('');
+    let entry = Array(answerLength).fill(null);
     let activeDrag = null;
     let lastPointerHandled = 0;
 
-    const collected = earnedLetters
+    const collectedLetters = earnedLetters
       .map(normalizeLettersOnly)
       .filter((letter) => letter.length === 1);
-    const collectedSet = new Set(collected);
-    const alphabet = [...M.config.alphabet].filter((letter) => !collectedSet.has(letter));
+
+    const collectedCounts = countByLetter(collectedLetters.join(''));
+    const requiredCounts = countByLetter(requiredWord || '');
+
+    const collectedSources = collectedLetters.map((letter, index) => ({
+      id: `collected-${index}`,
+      letter,
+      kind: 'collected',
+      order: index
+    }));
+
+    const alphabetSources = [];
+    [...M.config.alphabet].forEach((letter, alphabetIndex) => {
+      const alreadyCollected = collectedCounts.get(letter) || 0;
+      const required = requiredCounts.get(letter) || 0;
+      const baselineCopies = alreadyCollected > 0 ? 0 : 1;
+      const missingRequiredCopies = Math.max(0, required - alreadyCollected);
+      const copyCount = Math.max(baselineCopies, missingRequiredCopies);
+
+      for (let copyIndex = 0; copyIndex < copyCount; copyIndex += 1) {
+        alphabetSources.push({
+          id: `alphabet-${letter}-${copyIndex}`,
+          letter,
+          kind: 'alphabet',
+          order: alphabetIndex * 10 + copyIndex
+        });
+      }
+    });
+
+    const allSources = [...collectedSources, ...alphabetSources];
+    const sourceById = new Map(allSources.map((source) => [source.id, source]));
 
     function firstEmptyIndex() {
-      return entry.findIndex((letter) => !letter);
+      return entry.findIndex((sourceId) => !sourceId);
     }
 
-    function endDrag() {
-      if (!activeDrag) return;
-      activeDrag.source?.classList.remove('is-dragging-source');
-      activeDrag.ghost?.remove();
-      window.removeEventListener('pointermove', activeDrag.move);
-      window.removeEventListener('pointerup', activeDrag.up);
-      window.removeEventListener('pointercancel', activeDrag.cancel);
-      activeDrag = null;
+    function isSourceInUse(sourceId) {
+      return entry.includes(sourceId) || activeDrag?.sourceId === sourceId;
+    }
+
+    function sourceAt(index) {
+      return sourceById.get(entry[index]) || null;
+    }
+
+    function clearDragStyles() {
       document.querySelectorAll('.final-answer-slot.drag-over').forEach((slot) => slot.classList.remove('drag-over'));
     }
 
-    function createGhost(source, letter) {
-      const rect = source.getBoundingClientRect();
+    function detachDragListeners(drag) {
+      if (!drag) return;
+      window.removeEventListener('pointermove', drag.move);
+      window.removeEventListener('pointerup', drag.up);
+      window.removeEventListener('pointercancel', drag.cancel);
+    }
+
+    function finishDrag({ render = true } = {}) {
+      const drag = activeDrag;
+      if (!drag) return;
+      detachDragListeners(drag);
+      drag.ghost?.remove();
+      activeDrag = null;
+      clearDragStyles();
+      if (render) renderAll();
+    }
+
+    function createGhost(sourceElement, source) {
+      const rect = sourceElement.getBoundingClientRect();
       const ghost = document.createElement('span');
-      ghost.className = 'final-source-letter final-drag-ghost';
-      ghost.textContent = letter;
+      ghost.className = `${sourceElement.className.replace(/\bis-used\b|\bis-dragging-source\b/g, '').trim()} final-drag-ghost`;
+      ghost.textContent = source.letter;
       ghost.style.width = `${rect.width}px`;
       ghost.style.height = `${rect.height}px`;
       document.body.append(ghost);
@@ -64,38 +119,60 @@
       return Number(target.dataset.index);
     }
 
-    function setLetterAt(letter, targetIndex = firstEmptyIndex(), originIndex = null) {
-      if (!letter || targetIndex === null || targetIndex < 0 || targetIndex >= entry.length) return false;
-      const displaced = entry[targetIndex];
-      if (displaced && originIndex !== null && originIndex !== targetIndex) entry[originIndex] = displaced;
-      else if (displaced && originIndex === null) {
-        const empty = firstEmptyIndex();
-        if (empty >= 0 && empty !== targetIndex) entry[empty] = displaced;
-      }
-      entry[targetIndex] = letter;
+    function placeUnusedSource(sourceId, targetIndex = firstEmptyIndex()) {
+      if (!sourceById.has(sourceId) || isSourceInUse(sourceId)) return false;
+      if (targetIndex === null || targetIndex < 0 || targetIndex >= entry.length) return false;
+
+      entry[targetIndex] = sourceId;
       message.textContent = '';
       slots.classList.remove('is-error');
-      renderAnswerSlots();
+      renderAll();
+      onChange();
+      return true;
+    }
+
+    function movePlacedSource(originIndex, targetIndex) {
+      const sourceId = entry[originIndex];
+      if (!sourceId || targetIndex === null || targetIndex < 0 || targetIndex >= entry.length) return false;
+      if (originIndex === targetIndex) return true;
+
+      const displacedSourceId = entry[targetIndex];
+      entry[targetIndex] = sourceId;
+      entry[originIndex] = displacedSourceId || null;
+      message.textContent = '';
+      slots.classList.remove('is-error');
+      renderAll();
       onChange();
       return true;
     }
 
     function removeAt(index) {
       if (!entry[index]) return;
-      entry[index] = '';
+      entry[index] = null;
       message.textContent = '';
       slots.classList.remove('is-error');
-      renderAnswerSlots();
+      renderAll();
       onChange();
     }
 
-    function beginSourceDrag(letter, source, event) {
+    function updateDragTarget(pointerEvent) {
+      clearDragStyles();
+      const targetIndex = targetIndexAt(pointerEvent.clientX, pointerEvent.clientY);
+      if (targetIndex !== null) slots.querySelector(`[data-index="${targetIndex}"]`)?.classList.add('drag-over');
+      return targetIndex;
+    }
+
+    function beginSourceDrag(sourceId, sourceElement, event) {
       if (event.pointerType === 'mouse' && event.button !== 0) return;
+      if (isSourceInUse(sourceId)) return;
+      const source = sourceById.get(sourceId);
+      if (!source) return;
+
       event.preventDefault();
-      endDrag();
+      finishDrag({ render: false });
       lastPointerHandled = performance.now();
-      source.classList.add('is-dragging-source');
-      const { ghost, rect } = createGhost(source, letter);
+
+      const { ghost, rect } = createGhost(sourceElement, source);
       positionGhost(ghost, rect, event);
       const startX = event.clientX;
       const startY = event.clientY;
@@ -104,99 +181,118 @@
       const move = (pointerEvent) => {
         if (Math.hypot(pointerEvent.clientX - startX, pointerEvent.clientY - startY) > 6) moved = true;
         positionGhost(ghost, rect, pointerEvent);
-        document.querySelectorAll('.final-answer-slot.drag-over').forEach((slot) => slot.classList.remove('drag-over'));
-        const targetIndex = targetIndexAt(pointerEvent.clientX, pointerEvent.clientY);
-        if (targetIndex !== null) slots.querySelector(`[data-index="${targetIndex}"]`)?.classList.add('drag-over');
+        updateDragTarget(pointerEvent);
       };
+
       const up = (pointerEvent) => {
         const targetIndex = targetIndexAt(pointerEvent.clientX, pointerEvent.clientY);
-        endDrag();
-        if (targetIndex !== null) setLetterAt(letter, targetIndex);
-        else if (!moved) setLetterAt(letter);
+        const shouldTapPlace = !moved;
+        finishDrag({ render: false });
+        if (targetIndex !== null) placeUnusedSource(sourceId, targetIndex);
+        else if (shouldTapPlace) placeUnusedSource(sourceId);
+        else renderAll();
       };
-      const cancel = () => endDrag();
-      activeDrag = { source, ghost, move, up, cancel };
+
+      const cancel = () => finishDrag();
+      activeDrag = { sourceId, ghost, move, up, cancel };
+      renderSourceBanks();
       window.addEventListener('pointermove', move);
       window.addEventListener('pointerup', up, { once: true });
       window.addEventListener('pointercancel', cancel, { once: true });
     }
 
-    function beginAnswerDrag(index, source, event) {
+    function beginAnswerDrag(index, sourceElement, event) {
       if (event.pointerType === 'mouse' && event.button !== 0) return;
-      const letter = entry[index];
-      if (!letter) return;
-      event.preventDefault();
-      endDrag();
-      lastPointerHandled = performance.now();
-      const { ghost, rect } = createGhost(source, letter);
-      positionGhost(ghost, rect, event);
-      entry[index] = '';
-      renderAnswerSlots();
-      onChange();
+      const sourceId = entry[index];
+      const source = sourceById.get(sourceId);
+      if (!source) return;
 
+      event.preventDefault();
+      finishDrag({ render: false });
+      lastPointerHandled = performance.now();
+
+      const { ghost, rect } = createGhost(sourceElement, source);
+      sourceElement.classList.add('is-dragging-origin');
+      positionGhost(ghost, rect, event);
       const startX = event.clientX;
       const startY = event.clientY;
       let moved = false;
+
       const move = (pointerEvent) => {
         if (Math.hypot(pointerEvent.clientX - startX, pointerEvent.clientY - startY) > 6) moved = true;
         positionGhost(ghost, rect, pointerEvent);
-        document.querySelectorAll('.final-answer-slot.drag-over').forEach((slot) => slot.classList.remove('drag-over'));
-        const targetIndex = targetIndexAt(pointerEvent.clientX, pointerEvent.clientY);
-        if (targetIndex !== null) slots.querySelector(`[data-index="${targetIndex}"]`)?.classList.add('drag-over');
+        updateDragTarget(pointerEvent);
       };
+
       const up = (pointerEvent) => {
         const targetIndex = targetIndexAt(pointerEvent.clientX, pointerEvent.clientY);
-        endDrag();
-        if (targetIndex !== null) setLetterAt(letter, targetIndex, index);
-        else if (!moved) {
-          message.textContent = '';
-          slots.classList.remove('is-error');
-        }
-      };
-      const cancel = () => endDrag();
-      activeDrag = { source: null, ghost, move, up, cancel };
-      window.addEventListener('pointermove', move);
-      window.addEventListener('pointerup', up, { once: true });
-      window.addEventListener('pointercancel', cancel, { once: true });
-    }
+        finishDrag({ render: false });
 
-    function createSourceButton(letter, kind, index) {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = `final-source-letter ${kind}`;
-      button.textContent = letter;
-      button.dataset.sourceIndex = String(index);
-      button.setAttribute('aria-label', `${kind === 'collected' ? 'Lettre gagnée' : 'Lettre'} ${letter}, toucher ou faire glisser pour ajouter`);
-      button.addEventListener('pointerdown', (event) => beginSourceDrag(letter, button, event));
-      button.addEventListener('click', (event) => {
-        if (performance.now() - lastPointerHandled < 500) {
-          event.preventDefault();
+        if (!moved) {
+          removeAt(index);
           return;
         }
-        setLetterAt(letter);
-      });
+        if (targetIndex !== null) {
+          movePlacedSource(index, targetIndex);
+          return;
+        }
+        removeAt(index);
+      };
+
+      const cancel = () => finishDrag();
+      activeDrag = { sourceId, originIndex: index, ghost, move, up, cancel };
+      window.addEventListener('pointermove', move);
+      window.addEventListener('pointerup', up, { once: true });
+      window.addEventListener('pointercancel', cancel, { once: true });
+    }
+
+    function createSourceButton(source) {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = `final-source-letter ${source.kind}`;
+      button.textContent = source.letter;
+      button.dataset.sourceId = source.id;
+
+      const used = isSourceInUse(source.id);
+      button.classList.toggle('is-used', used);
+      button.disabled = used;
+      button.setAttribute('aria-hidden', String(used));
+      button.setAttribute('aria-label', `${source.kind === 'collected' ? 'Lettre gagnée' : 'Lettre'} ${source.letter}, toucher ou faire glisser pour ajouter`);
+
+      if (!used) {
+        button.addEventListener('pointerdown', (event) => beginSourceDrag(source.id, button, event));
+        button.addEventListener('click', (event) => {
+          if (performance.now() - lastPointerHandled < 500) {
+            event.preventDefault();
+            return;
+          }
+          placeUnusedSource(source.id);
+        });
+      }
       return button;
     }
 
     function renderSourceBanks() {
-      collectedCount.textContent = `${collected.length}/${answerLength}`;
-      collectedBank.replaceChildren(...collected.map((letter, index) => createSourceButton(letter, 'collected', index)));
-      collectedEmpty.hidden = collected.length > 0;
-      alphabetBank.replaceChildren(...alphabet.map((letter, index) => createSourceButton(letter, 'alphabet', index)));
+      collectedCount.textContent = `${collectedLetters.length}/${answerLength}`;
+      collectedBank.replaceChildren(...collectedSources.map(createSourceButton));
+      collectedEmpty.hidden = collectedSources.length > 0;
+      alphabetBank.replaceChildren(...alphabetSources.map(createSourceButton));
     }
 
     function renderAnswerSlots() {
       slots.replaceChildren();
       C.setSlotContainerWidth(slots, answerLength);
-      entry.forEach((letter, index) => {
+      entry.forEach((sourceId, index) => {
+        const source = sourceById.get(sourceId);
         const slot = document.createElement('button');
         slot.type = 'button';
         slot.className = 'answer-slot final-answer-slot';
         slot.dataset.index = String(index);
-        if (letter) {
-          slot.textContent = letter;
+
+        if (source) {
+          slot.textContent = source.letter;
           slot.classList.add('filled');
-          slot.setAttribute('aria-label', `Lettre ${letter}, toucher ou faire glisser hors des cases pour retirer`);
+          slot.setAttribute('aria-label', `Lettre ${source.letter}, toucher pour retirer ou faire glisser`);
           slot.addEventListener('pointerdown', (event) => beginAnswerDrag(index, slot, event));
           slot.addEventListener('click', (event) => {
             if (performance.now() - lastPointerHandled < 500) {
@@ -211,7 +307,14 @@
         }
         slots.append(slot);
       });
-      slots.setAttribute('aria-label', `Mot mystère : ${entry.filter(Boolean).length} lettre${entry.filter(Boolean).length > 1 ? 's' : ''} placée${entry.filter(Boolean).length > 1 ? 's' : ''} sur ${answerLength}`);
+
+      const placedCount = entry.filter(Boolean).length;
+      slots.setAttribute('aria-label', `Mot mystère : ${placedCount} lettre${placedCount > 1 ? 's' : ''} placée${placedCount > 1 ? 's' : ''} sur ${answerLength}`);
+    }
+
+    function renderAll() {
+      renderAnswerSlots();
+      renderSourceBanks();
     }
 
     function showIncomplete() {
@@ -223,26 +326,31 @@
     }
 
     function reset() {
-      entry = Array(answerLength).fill('');
+      finishDrag({ render: false });
+      entry = Array(answerLength).fill(null);
       message.textContent = '';
       slots.classList.remove('is-error', 'shake');
-      renderAnswerSlots();
+      renderAll();
       onChange();
     }
 
-    renderSourceBanks();
-    renderAnswerSlots();
+    renderAll();
 
     return {
-      getAnswer: () => entry.join(''),
+      getAnswer: () => entry.map((sourceId) => sourceById.get(sourceId)?.letter || '').join(''),
       isComplete: () => entry.every(Boolean),
       showIncomplete,
       reset,
       focus: () => {
-        const target = collectedBank.querySelector('button') || alphabetBank.querySelector('button');
+        const target = collectedBank.querySelector('button:not(:disabled)') || alphabetBank.querySelector('button:not(:disabled)');
         target?.focus({ preventScroll: true });
       },
-      destroy: () => { endDrag(); slots.replaceChildren(); collectedBank.replaceChildren(); alphabetBank.replaceChildren(); }
+      destroy: () => {
+        finishDrag({ render: false });
+        slots.replaceChildren();
+        collectedBank.replaceChildren();
+        alphabetBank.replaceChildren();
+      }
     };
   }
 
