@@ -1,0 +1,38 @@
+name: Run native hint integration
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    if: github.event.issue.title == 'Run tested MOTAMO answer integration'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run tested integration script
+        shell: bash
+        run: |
+          sed -n "/python <<'PY'/,/^          PY$/p" .github/workflows/native-hint-integration.yml | sed '1d;$d;s/^          //' > /tmp/native_hint.py
+          python /tmp/native_hint.py
+
+      - name: Verify engine integration
+        shell: bash
+        run: |
+          node --check js/app.js
+          grep -q "function renderQuestionSlots" js/app.js
+          grep -q "const expected = keyboardModeMax('question')" js/app.js
+          grep -q "const expected = countLetters(question.answer)" js/app.js
+          ! grep -q "hint-keyboard-patch.js" js/data.js
+
+      - name: Commit tested native answer flow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/app.js js/data.js
+          git diff --cached --quiet || (git commit -m "Integrate hint into original answer validation" && git push)
