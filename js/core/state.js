@@ -9,6 +9,7 @@
     feedbackAction: null,
     toastTimer: null,
     questionController: null,
+    finalController: null,
 
     initialise() {
       this.progress = M.core.storage.loadProgress();
@@ -16,7 +17,9 @@
 
     startAttempt(level) {
       this.questionController?.destroy?.();
+      this.finalController?.destroy?.();
       this.questionController = null;
+      this.finalController = null;
       this.attempt = {
         level,
         questionIndex: 0,

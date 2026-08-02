@@ -39,15 +39,6 @@
     dom.collectionCount.textContent = `${collected}/${M.config.questionsPerLevel}`;
   }
 
-  function renderFinalRack() {
-    const dom = M.ui.dom;
-    const attempt = state.attempt;
-    dom.finalLetterRack.replaceChildren();
-    attempt.earned.forEach((letter, index) => {
-      dom.finalLetterRack.append(C.createLetterTile(letter || '?', attempt.statuses[index] === 'correct' ? 'known' : 'unknown'));
-    });
-  }
-
   function mountQuestionInteraction(question) {
     const dom = M.ui.dom;
     state.questionController?.destroy?.();
@@ -95,19 +86,13 @@
     S.showScreen('game');
   }
 
-  function currentFinalEntry() {
-    return state.attempt?.finalEntry || '';
-  }
-
-  function setFinalEntry(nextValue) {
-    const dom = M.ui.dom;
-    const attempt = state.attempt;
-    if (!attempt) return;
-    const clean = normalizeLettersOnly(nextValue).slice(0, M.config.questionsPerLevel);
-    attempt.finalEntry = clean;
-    dom.finalMessage.textContent = '';
-    dom.finalSlots.classList.remove('is-error');
-    C.renderSlots(dom.finalSlots, M.config.questionsPerLevel, clean, 'Mot mystère');
+  function updateFinalSubmitButton() {
+    const button = document.querySelector('#submit-final');
+    if (!button) return;
+    const ready = Boolean(state.finalController?.isComplete());
+    button.disabled = !ready;
+    button.classList.toggle('is-ready', ready);
+    button.setAttribute('aria-disabled', String(!ready));
   }
 
   function handleKey(mode, key) {
@@ -125,24 +110,7 @@
       return;
     }
 
-    const value = currentFinalEntry();
-    if (key === 'BACKSPACE') {
-      setFinalEntry(value.slice(0, -1));
-      return;
-    }
-    if (key === 'ENTER') {
-      submitFinalWord();
-      return;
-    }
-    if (/^[A-Z]$/.test(key)) {
-      if (value.length >= M.config.questionsPerLevel) {
-        dom.finalSlots.classList.remove('shake');
-        void dom.finalSlots.offsetWidth;
-        dom.finalSlots.classList.add('shake');
-        return;
-      }
-      setFinalEntry(value + key);
-    }
+    if (key === 'ENTER') submitFinalWord();
   }
 
   function submitQuestion() {
@@ -208,30 +176,41 @@
     const dom = M.ui.dom;
     const attempt = state.attempt;
     state.questionController?.destroy?.();
+    state.finalController?.destroy?.();
     state.questionController = null;
     attempt.finalEntry = '';
     C.renderLives(dom.finalLives, attempt.lives);
-    renderFinalRack();
     dom.finalMessage.textContent = '';
     dom.finalSlots.classList.remove('is-error', 'shake');
-    C.renderSlots(dom.finalSlots, M.config.questionsPerLevel, '', 'Mot mystère');
+    state.finalController = M.game.createFinalWordBuilder({
+      slots: dom.finalSlots,
+      collectedBank: dom.finalLetterRack,
+      alphabetBank: dom.finalAlphabetRack,
+      collectedCount: dom.finalCollectedCount,
+      collectedEmpty: dom.finalCollectedEmpty,
+      message: dom.finalMessage,
+      answerLength: M.config.questionsPerLevel,
+      earnedLetters: attempt.earned.filter(Boolean),
+      onChange: updateFinalSubmitButton
+    });
+    updateFinalSubmitButton();
     S.showScreen('final');
   }
 
   function submitFinalWord() {
     const dom = M.ui.dom;
     const attempt = state.attempt;
-    if (!attempt) return;
-    if (attempt.finalEntry.length < M.config.questionsPerLevel) {
-      dom.finalMessage.textContent = M.data.copy.completeAllCases;
-      dom.finalSlots.classList.add('is-error');
-      dom.finalSlots.classList.remove('shake');
-      void dom.finalSlots.offsetWidth;
-      dom.finalSlots.classList.add('shake');
+    const controller = state.finalController;
+    if (!attempt || !controller) return;
+    if (!controller.isComplete()) {
+      controller.showIncomplete();
+      updateFinalSubmitButton();
       return;
     }
 
-    if (normalizeLettersOnly(attempt.finalEntry) === normalizeLettersOnly(attempt.level.word)) {
+    const finalEntry = controller.getAnswer();
+    attempt.finalEntry = finalEntry;
+    if (normalizeLettersOnly(finalEntry) === normalizeLettersOnly(attempt.level.word)) {
       completeLevel();
       return;
     }
@@ -251,8 +230,9 @@
     dom.finalSlots.classList.add('shake');
     window.setTimeout(() => {
       attempt.finalEntry = '';
-      C.renderSlots(dom.finalSlots, M.config.questionsPerLevel, '', 'Mot mystère');
+      controller.reset();
       dom.finalSlots.classList.remove('is-error');
+      updateFinalSubmitButton();
     }, M.config.finalRetryResetMs);
   }
 
@@ -396,7 +376,6 @@
       if (event.target.closest('[data-shop-pack]')) S.showToast(M.data.copy.shopToast);
     });
 
-    dom.finalSlots.addEventListener('click', () => dom.finalSlots.focus());
     dom.splash.addEventListener('click', dismissSplash);
     window.setTimeout(dismissSplash, M.config.splashDurationMs);
 
@@ -411,17 +390,25 @@
       }
       if (!state.attempt || !['game','final'].includes(state.activeScreen)) return;
 
+      if (state.activeScreen === 'final') {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          submitFinalWord();
+        }
+        return;
+      }
+
       if (event.key === 'Backspace') {
         event.preventDefault();
-        handleKey(state.activeScreen === 'game' ? 'question' : 'final', 'BACKSPACE');
+        handleKey('question', 'BACKSPACE');
       } else if (event.key === 'Enter') {
         event.preventDefault();
-        handleKey(state.activeScreen === 'game' ? 'question' : 'final', 'ENTER');
+        handleKey('question', 'ENTER');
       } else {
         const letter = normalizeLettersOnly(event.key);
         if (letter.length === 1) {
           event.preventDefault();
-          handleKey(state.activeScreen === 'game' ? 'question' : 'final', letter);
+          handleKey('question', letter);
         }
       }
     });
@@ -433,6 +420,7 @@
     renderQuestion,
     renderLiveCollection,
     updateQuestionSubmitButton,
+    updateFinalSubmitButton,
     handleKey,
     submitQuestion,
     submitFinalWord,

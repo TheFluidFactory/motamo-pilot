@@ -14,6 +14,7 @@
     answerSlotWidthPx: 46,
     answerSlotsMaxWidthPx: 360,
     defaultQuestionInteraction: 'text',
+    alphabet: 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
     keyboardRows: Object.freeze([
       Object.freeze(['A','Z','E','R','T','Y','U','I','O','P']),
       Object.freeze(['Q','S','D','F','G','H','J','K','L','M']),

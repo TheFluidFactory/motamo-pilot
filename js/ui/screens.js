@@ -114,7 +114,7 @@
   function focusScreen(name) {
     const dom = M.ui.dom;
     if (name === 'game') state.questionController?.focus?.();
-    else if (name === 'final') dom.finalSlots.focus({ preventScroll: true });
+    else if (name === 'final') state.finalController?.focus?.();
     else dom.screens.find((screen) => screen.dataset.screen === name)?.querySelector('button:not([disabled]), [tabindex="0"]')?.focus({ preventScroll: true });
   }
 
@@ -130,6 +130,7 @@
     if (name === 'missions') renderMissions();
     if (name === 'shop') renderShop();
     M.game.engine?.updateQuestionSubmitButton?.();
+    M.game.engine?.updateFinalSubmitButton?.();
     if (options.focus !== false) window.requestAnimationFrame(() => focusScreen(name));
   }
 

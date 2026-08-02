@@ -30,12 +30,9 @@
         button.setAttribute('aria-pressed', String(selected?.id === option.id));
         if (selected?.id === option.id) button.classList.add('is-selected');
 
-        const marker = document.createElement('span');
-        marker.className = 'choice-marker';
-        marker.textContent = String.fromCharCode(65 + index);
         const label = document.createElement('strong');
         label.textContent = option.label;
-        button.append(marker, label);
+        button.append(label);
         button.addEventListener('click', () => {
           selected = option;
           inputMessage.textContent = '';

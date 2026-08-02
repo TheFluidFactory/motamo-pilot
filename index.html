@@ -23,8 +23,8 @@
   <script src="js/game/answers.js" defer></script>
   <script src="js/question-types/registry.js" defer></script>
   <script src="js/question-types/text.js" defer></script>
-  <script src="js/question-types/anagram.js" defer></script>
   <script src="js/question-types/multiple-choice.js" defer></script>
+  <script src="js/game/final-word-builder.js" defer></script>
   <script src="js/ui/screens.js" defer></script>
   <script src="js/game/engine.js" defer></script>
   <script src="js/app.js" defer></script>
@@ -190,17 +190,32 @@
           <div class="lives" id="final-lives" aria-label="3 vies restantes"></div>
         </header>
 
-        <div class="play-layout final-layout">
+        <div class="play-layout final-layout no-keyboard">
           <div class="play-scroll final-play-scroll">
-            <div class="final-intro"><span class="eyebrow">Sept questions terminées</span><h3>Retrouvez le mot</h3><div class="letter-rack final-rack" id="final-letter-rack" aria-label="Indices du mot mystère"></div></div>
-            <section class="block-answer-card final-answer-card">
-              <div class="answer-card-head"><span>Votre mot</span><span class="final-hint">Les « ? » sont des lettres manquées</span></div>
-              <div class="answer-slots final-answer-slots" id="final-slots" role="textbox" tabindex="0" aria-label="Mot mystère vide"></div>
+            <div class="final-intro"><span class="eyebrow">Sept questions terminées</span><h3>Retrouvez le mot</h3></div>
+
+            <section class="final-builder-card" aria-labelledby="final-builder-title">
+              <div class="answer-card-head"><span id="final-builder-title">Votre mot</span><span class="final-hint">Touchez ou faites glisser une lettre</span></div>
+              <div class="answer-slots final-answer-slots" id="final-slots" aria-label="Mot mystère vide"></div>
+              <p class="final-builder-instruction">Touchez une lettre pour l’ajouter. Touchez une lettre placée, ou faites-la glisser hors des cases, pour la retirer.</p>
               <p class="input-message" id="final-message" aria-live="polite"></p>
+
+              <section class="final-source-section collected-source" aria-labelledby="collected-source-title">
+                <div class="final-source-heading"><span id="collected-source-title">Lettres gagnées</span><strong id="final-collected-count">0/7</strong></div>
+                <div class="final-letter-bank collected-bank" id="final-letter-rack" aria-label="Lettres gagnées"></div>
+                <p class="final-source-empty" id="final-collected-empty" hidden>Aucune lettre gagnée : utilisez l’alphabet ci-dessous.</p>
+              </section>
+
+              <div class="final-separator" aria-hidden="true"></div>
+
+              <section class="final-source-section alphabet-source" aria-labelledby="alphabet-source-title">
+                <div class="final-source-heading"><span id="alphabet-source-title">Autres lettres</span><small>Alphabet sans vos lettres gagnées</small></div>
+                <div class="final-letter-bank alphabet-bank" id="final-alphabet-rack" aria-label="Autres lettres de l’alphabet"></div>
+              </section>
             </section>
-            <button class="button button-primary answer-submit" id="submit-final" type="button"><svg class="icon"><use href="#i-check"></use></svg>Valider le mot</button>
+
+            <button class="button button-primary answer-submit" id="submit-final" type="button" disabled aria-disabled="true"><svg class="icon"><use href="#i-check"></use></svg>Valider le mot</button>
           </div>
-          <div class="keyboard-panel" id="final-keyboard" aria-label="Clavier du mot mystère"></div>
         </div>
       </section>
 

@@ -37,12 +37,6 @@
     }
   }
 
-  function validateAnagramQuestion(question) {
-    if (!question.letterBank) throw new Error(`Banque de lettres absente : ${question.id}.`);
-    if (!sameLetters(question.letterBank, question.answer)) {
-      throw new Error(`La banque de lettres ne correspond pas à la réponse (${question.id}).`);
-    }
-  }
 
   function validateMultipleChoiceQuestion(question) {
     if (!Array.isArray(question.options) || question.options.length < 2) {
@@ -78,7 +72,6 @@
         if (!normalizeLettersOnly(question.answer)) throw new Error(`Réponse vide : ${question.id}.`);
         if (normalizeLettersOnly(question.rewardLetter).length !== 1) throw new Error(`Lettre récompense invalide : ${question.id}.`);
         if (interaction === 'text') validateTextQuestion(question);
-        else if (interaction === 'anagram') validateAnagramQuestion(question);
         else if (interaction === 'multipleChoice') validateMultipleChoiceQuestion(question);
         else throw new Error(`Type d'interaction inconnu « ${interaction} » (${question.id}).`);
       });

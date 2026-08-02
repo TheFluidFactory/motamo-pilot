@@ -176,7 +176,7 @@
       visual.innerHTML = '<div class="mini-rack"><b>U</b><b>F</b><b>?</b><b>R</b><b>L</b><b>·</b><b>O</b></div><div class="mini-progress-line"><span></span></div>';
     } else {
       visual.classList.add('mini-final-shot');
-      visual.innerHTML = '<div class="mini-hearts">♥ ♥ ♡</div><div class="mini-answer-blocks final"><b>F</b><b>O</b><b>R</b><b>M</b><b>U</b><b>L</b><b>E</b></div><div class="mini-confirm">✓</div>';
+      visual.innerHTML = '<div class="mini-hearts">♥ ♥ ♡</div><div class="mini-answer-blocks final"><b></b><b></b><b></b><b></b><b></b><b></b><b></b></div><div class="mini-letter-row"><i>F</i><i>O</i><i>R</i><i>M</i></div><div class="mini-confirm">✓</div>';
     }
     return visual;
   }
