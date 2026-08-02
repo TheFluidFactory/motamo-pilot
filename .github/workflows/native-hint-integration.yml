@@ -1,0 +1,268 @@
+name: Integrate hint into answer engine
+
+on:
+  push:
+    paths:
+      - 'native-hint-trigger.txt'
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Integrate hint into the original answer engine
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          app_path = Path('js/app.js')
+          app = app_path.read_text(encoding='utf-8')
+
+          if 'function renderQuestionSlots()' in app:
+              print('Native hint integration already present.')
+          else:
+              app = app.replace(
+                  "    ['BACKSPACE','W','X','C','V','B','N','ENTER']",
+                  "    ['W','X','C','V','B','N','BACKSPACE']",
+                  1,
+              )
+              app = app.replace(
+                  "      questionEntry: '',\n      finalEntry: '',",
+                  "      questionEntry: '',\n      questionHintIndex: null,\n      finalEntry: '',",
+                  1,
+              )
+
+              current_question = """  function currentQuestion() {
+            return attempt?.level.questions[attempt.questionIndex] || null;
+          }
+
+          """
+              hint_engine = """  function currentQuestion() {
+            return attempt?.level.questions[attempt.questionIndex] || null;
+          }
+
+          function normalizedQuestionAnswers(question) {
+            return [question.answer, ...(question.acceptedAnswers || [])].map(normalizeLettersOnly);
+          }
+
+          function chooseQuestionHintIndex(question) {
+            const length = countLetters(question.answer);
+            return length > 1 ? 1 + Math.floor(Math.random() * (length - 1)) : null;
+          }
+
+          function answerPositionForEntryIndex(entryIndex) {
+            const hintIndex = attempt?.questionHintIndex;
+            if (hintIndex === null || hintIndex === undefined) return entryIndex;
+            return entryIndex >= hintIndex ? entryIndex + 1 : entryIndex;
+          }
+
+          function matchingQuestionAnswers(question, entry = attempt?.questionEntry || '') {
+            const typed = [...entry];
+            return normalizedQuestionAnswers(question).filter((answer) =>
+              typed.every((letter, entryIndex) => answer[answerPositionForEntryIndex(entryIndex)] === letter)
+            );
+          }
+
+          function currentQuestionHintLetter(question) {
+            const hintIndex = attempt?.questionHintIndex;
+            if (hintIndex === null || hintIndex === undefined) return '';
+            const selected = matchingQuestionAnswers(question)[0] || normalizedQuestionAnswers(question)[0];
+            return selected?.[hintIndex] || '';
+          }
+
+          function isAcceptedQuestionEntry(question, entry) {
+            const hintIndex = attempt?.questionHintIndex;
+            return normalizedQuestionAnswers(question).some((answer) => {
+              if (hintIndex === null || hintIndex === undefined) return answer === entry;
+              return [...answer].filter((_, index) => index !== hintIndex).join('') === entry;
+            });
+          }
+
+          function injectNativeHintStyles() {
+            if (document.querySelector('#motamo-native-hint-styles')) return;
+            const style = document.createElement('style');
+            style.id = 'motamo-native-hint-styles';
+            style.textContent = `
+              .answer-slot{position:relative}
+              .answer-slot.hint-letter{
+                border-color:#ffd45a!important;
+                background:linear-gradient(180deg,#fff8ca,#f3cf63)!important;
+                color:#3a2b06!important;
+                box-shadow:0 4px 0 #b88a18,0 0 0 3px rgba(255,200,61,.15),0 7px 12px rgba(0,0,0,.22)!important;
+              }
+              .answer-slot.hint-letter::after{
+                content:"✦";position:absolute;top:-.35rem;right:-.2rem;display:grid;place-items:center;
+                width:.9rem;height:.9rem;border-radius:999px;background:var(--purple-600);color:#fff;
+                font-size:.52rem;box-shadow:0 3px 7px rgba(0,0,0,.28)
+              }
+              .keyboard-row .key.action{
+                order:99;flex:1.25!important;background:linear-gradient(180deg,#f6be35,#d9820b)!important;
+                color:#10244d!important;font-size:1.75rem!important;line-height:1!important;
+                box-shadow:0 4px 0 #8c4e04,inset 0 1px 0 rgba(255,255,255,.38)!important
+              }
+              #submit-question.answer-submit{
+                background:linear-gradient(180deg,#8490a9,#5e6a83)!important;
+                box-shadow:0 6px 0 #3d475d,0 10px 18px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.18)!important;
+                opacity:.62;cursor:not-allowed
+              }
+              #submit-question.answer-submit.is-ready{
+                background:linear-gradient(180deg,#35c86a,#168943)!important;
+                box-shadow:0 6px 0 #0c5c2d,0 10px 20px rgba(19,153,72,.3),inset 0 1px 0 rgba(255,255,255,.24)!important;
+                opacity:1;cursor:pointer
+              }
+            `;
+            document.head.append(style);
+          }
+
+          function updateQuestionSubmitButton() {
+            const button = document.querySelector('#submit-question');
+            if (!button) return;
+            const ready = Boolean(attempt && currentQuestion() && attempt.questionEntry.length === keyboardModeMax('question'));
+            button.disabled = !ready;
+            button.classList.toggle('is-ready', ready);
+            button.setAttribute('aria-disabled', String(!ready));
+          }
+
+          function renderQuestionSlots() {
+            const question = currentQuestion();
+            if (!attempt || !question) return;
+
+            const count = countLetters(question.answer);
+            const entry = [...attempt.questionEntry];
+            const hintIndex = attempt.questionHintIndex;
+            const hintLetter = currentQuestionHintLetter(question);
+            elements.answerSlots.replaceChildren();
+            elements.answerSlots.style.setProperty('--slot-count', String(count));
+            elements.answerSlots.style.maxWidth = `${Math.min(360, count * 46)}px`;
+
+            for (let index = 0; index < count; index += 1) {
+              const slot = document.createElement('span');
+              slot.className = 'answer-slot';
+              if (index === hintIndex) {
+                slot.textContent = hintLetter;
+                slot.classList.add('filled', 'hint-letter');
+                slot.setAttribute('aria-label', `Lettre indice : ${hintLetter}`);
+              } else {
+                const entryIndex = hintIndex === null || index < hintIndex ? index : index - 1;
+                const letter = entry[entryIndex];
+                if (letter) {
+                  slot.textContent = letter;
+                  slot.classList.add('filled');
+                } else if (entryIndex === entry.length) {
+                  slot.classList.add('next');
+                }
+              }
+              elements.answerSlots.append(slot);
+            }
+
+            elements.answerSlots.setAttribute(
+              'aria-label',
+              `Réponse : ${attempt.questionEntry || 'vide'}, une lettre indice offerte, ${attempt.questionEntry.length} lettre${attempt.questionEntry.length > 1 ? 's' : ''} saisie${attempt.questionEntry.length > 1 ? 's' : ''}`
+            );
+            updateQuestionSubmitButton();
+          }
+
+          """
+              if current_question not in app:
+                  raise SystemExit('currentQuestion marker not found')
+              app = app.replace(current_question, hint_engine, 1)
+
+              replacements = [
+                  (
+                      "    attempt.questionEntry = '';\n\n    elements.hudLevel",
+                      "    attempt.questionEntry = '';\n    attempt.questionHintIndex = chooseQuestionHintIndex(question);\n\n    elements.hudLevel",
+                  ),
+                  (
+                      "    renderSlots(elements.answerSlots, countLetters(question.answer), '', 'Réponse');",
+                      "    renderQuestionSlots();",
+                  ),
+                  (
+                      "    if (mode === 'question') return countLetters(currentQuestion()?.answer || '');",
+                      "    if (mode === 'question') {\n      const total = countLetters(currentQuestion()?.answer || '');\n      return Math.max(0, total - (attempt?.questionHintIndex === null || attempt?.questionHintIndex === undefined ? 0 : 1));\n    }",
+                  ),
+                  (
+                      "      renderSlots(elements.answerSlots, max, clean, 'Réponse');",
+                      "      renderQuestionSlots();",
+                  ),
+                  (
+                      "          button.append(svgUse('i-delete'));",
+                      "          button.textContent = '‹';",
+                  ),
+                  (
+                      "    if (name === 'missions') renderMissionState();\n    if (options.focus !== false)",
+                      "    if (name === 'missions') renderMissionState();\n    updateQuestionSubmitButton();\n    if (options.focus !== false)",
+                  ),
+                  (
+                      "    window.setTimeout(dismissSplash, 2100);\n\n    document.addEventListener('keydown'",
+                      "    window.setTimeout(dismissSplash, 2100);\n    window.addEventListener('DOMContentLoaded', updateQuestionSubmitButton, { once: true });\n\n    document.addEventListener('keydown'",
+                  ),
+                  (
+                      "  validateData();\n  buildKeyboard",
+                      "  injectNativeHintStyles();\n  validateData();\n  buildKeyboard",
+                  ),
+              ]
+              for old, new in replacements:
+                  if old not in app:
+                      raise SystemExit(f'Marker not found: {old[:70]}')
+                  app = app.replace(old, new, 1)
+
+              submit_old = """  function submitQuestion() {
+            const question = currentQuestion();
+            if (!attempt || !question) return;
+            const expected = countLetters(question.answer);
+            const value = attempt.questionEntry;
+          """
+              submit_new = """  function submitQuestion() {
+            const question = currentQuestion();
+            if (!attempt || !question) return;
+            const expected = keyboardModeMax('question');
+            const value = attempt.questionEntry;
+          """
+              if submit_old not in app:
+                  raise SystemExit('submitQuestion marker not found')
+              app = app.replace(submit_old, submit_new, 1)
+
+              accepted_old = "    if (isAcceptedAnswer(question, value)) {"
+              if accepted_old not in app:
+                  raise SystemExit('answer acceptance marker not found')
+              app = app.replace(accepted_old, "    if (isAcceptedQuestionEntry(question, value)) {", 1)
+
+              app_path.write_text(app, encoding='utf-8')
+
+          data_path = Path('js/data.js')
+          data = data_path.read_text(encoding='utf-8')
+          loader = """
+
+          (() => {
+            const script = document.createElement('script');
+            script.src = 'js/hint-keyboard-patch.js';
+            script.async = false;
+            document.head.append(script);
+          })();
+          """
+          if loader in data:
+              data = data.replace(loader, '', 1)
+              data_path.write_text(data, encoding='utf-8')
+          PY
+
+      - name: Verify engine integration
+        shell: bash
+        run: |
+          node --check js/app.js
+          grep -q "function renderQuestionSlots" js/app.js
+          grep -q "const expected = keyboardModeMax('question')" js/app.js
+          grep -q "const expected = countLetters(question.answer)" js/app.js
+          ! grep -q "hint-keyboard-patch.js" js/data.js
+
+      - name: Commit tested native answer flow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add js/app.js js/data.js
+          git diff --cached --quiet || (git commit -m "Integrate hint into original answer validation" && git push)
