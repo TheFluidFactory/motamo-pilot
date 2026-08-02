@@ -1,56 +1,52 @@
-# MOTAMO — pilote solo
+# MOTAMO — pilote solo v2
 
-Prototype statique du mode **Classique solo**, conçu pour tester la boucle centrale :
+Prototype statique du mode **Classique solo**, prêt pour GitHub Pages.
 
-1. répondre à sept questions ;
-2. gagner une lettre configurée pour chaque bonne réponse ;
-3. conserver des `?` pour les questions manquées ;
-4. retrouver le mot mystère à partir des indices collectés.
+## Ce que contient cette version
 
-## Lancer localement
+- écran d’ouverture MOTAMO temporaire ;
+- page d’accueil avec bouton Jouer ;
+- menu inférieur à deux icônes : Missions et Comment jouer ;
+- page Missions illustrative avec plusieurs états de récompense ;
+- tutoriel visuel sous forme de mini-écrans ;
+- sélection de 60 niveaux : 20 Facile, 20 Intermédiaire, 20 Difficile ;
+- un niveau jouable par difficulté : FORMULE, CLAVIER et JOURNAL ;
+- clavier AZERTY intégré à l’application ;
+- réponses affichées dans des cases individuelles ;
+- aucune ouverture du clavier natif du téléphone ;
+- variantes de réponses de même longueur ;
+- collecte partielle de lettres, mot final, vies, victoire et défaite ;
+- sauvegarde locale des étoiles.
 
-Ouvrez directement `index.html` dans un navigateur moderne, ou servez le dossier avec :
+## Publication avec GitHub Pages
 
-```bash
-python3 -m http.server 8000
-```
+1. Créer un dépôt GitHub public vide nommé `motamo-pilot`.
+2. Importer **le contenu de ce dossier** à la racine du dépôt.
+3. Ouvrir `Settings` → `Pages`.
+4. Sélectionner `Deploy from a branch`.
+5. Choisir `main` et `/(root)`.
+6. Cliquer sur `Save`.
 
-Puis ouvrez `http://localhost:8000`.
+Le site apparaîtra normalement à l’adresse :
 
-## Publier sur GitHub Pages
-
-1. Créez un dépôt GitHub vide, par exemple `motamo-pilot`.
-2. Ajoutez tous les fichiers et dossiers de ce projet à la racine du dépôt.
-3. Dans GitHub : **Settings → Pages**.
-4. Choisissez **Deploy from a branch**.
-5. Sélectionnez **main** et **/(root)**, puis **Save**.
+`https://VOTRE-NOM.github.io/motamo-pilot/`
 
 ## Fichiers
 
-- `index.html` — structure des écrans.
-- `css/styles.css` — design responsive et états visuels.
-- `js/data.js` — trois niveaux et vingt-et-une questions.
-- `js/app.js` — navigation, validation, vies, lettres, mot final et progression locale.
-- `.nojekyll` — évite le traitement Jekyll de GitHub Pages.
+```text
+motamo-pilot/
+├── index.html
+├── css/
+│   └── styles.css
+├── js/
+│   ├── data.js
+│   └── app.js
+├── README.md
+└── .nojekyll
+```
 
-## Règles du pilote
+## Modifier les questions
 
-- Trois vies par niveau.
-- Une mauvaise réponse ou un passage retire une vie et ne donne pas de lettre.
-- Le niveau s'arrête immédiatement à zéro vie.
-- Après sept questions, les lettres gagnées sont montrées dans un ordre garanti mélangé ; les lettres manquées deviennent `?`.
-- Un mot final incorrect retire une vie.
-- Les étoiles correspondent aux vies restantes.
-- La progression terminée est sauvegardée dans `localStorage`; la tentative active ne l'est pas.
+Les niveaux et questions se trouvent dans `js/data.js`.
 
-## Ajouter un niveau
-
-Ajoutez un objet dans `window.MOTAMO_LEVELS` dans `js/data.js`.
-
-Contraintes actuelles :
-
-- mot final de sept lettres ;
-- aucune lettre répétée ;
-- sept questions ;
-- `scramble` doit contenir exactement les sept lettres du mot, dans un ordre différent ;
-- chaque question porte une `rewardLetter` correspondant à la position équivalente dans `scramble`.
+Toutes les variantes d’une réponse doivent avoir le même nombre de lettres que la réponse principale, car le nombre de cases est fixe. Les accents ne sont pas nécessaires pour répondre.
