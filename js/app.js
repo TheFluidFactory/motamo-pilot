@@ -6,7 +6,7 @@
   const KEYBOARD_ROWS = [
     ['A','Z','E','R','T','Y','U','I','O','P'],
     ['Q','S','D','F','G','H','J','K','L','M'],
-    ['BACKSPACE','W','X','C','V','B','N','ENTER']
+    ['W','X','C','V','B','N','BACKSPACE']
   ];
 
   const screens = [...document.querySelectorAll('[data-screen]')];
@@ -156,6 +156,7 @@
     });
     if (name === 'levels') renderLevels();
     if (name === 'missions') renderMissionState();
+    updateQuestionSubmitButton();
     if (options.focus !== false) window.requestAnimationFrame(() => focusScreen(name));
   }
 
@@ -286,6 +287,7 @@
       statuses: Array(7).fill(null),
       earned: Array(7).fill(null),
       questionEntry: '',
+      questionHintIndex: null,
       finalEntry: '',
       defeatContext: null
     };
@@ -295,6 +297,90 @@
 
   function currentQuestion() {
     return attempt?.level.questions[attempt.questionIndex] || null;
+  }
+
+  function normalizedQuestionAnswers(question) {
+    return [question.answer, ...(question.acceptedAnswers || [])].map(normalizeLettersOnly);
+  }
+
+  function chooseQuestionHintIndex(question) {
+    const length = countLetters(question.answer);
+    return length > 1 ? 1 + Math.floor(Math.random() * (length - 1)) : null;
+  }
+
+  function questionAnswerPosition(entryIndex) {
+    const hintIndex = attempt?.questionHintIndex;
+    if (hintIndex === null || hintIndex === undefined) return entryIndex;
+    return entryIndex >= hintIndex ? entryIndex + 1 : entryIndex;
+  }
+
+  function matchingQuestionAnswers(question, entry = attempt?.questionEntry || '') {
+    const typed = [...entry];
+    return normalizedQuestionAnswers(question).filter((answer) =>
+      typed.every((letter, entryIndex) => answer[questionAnswerPosition(entryIndex)] === letter)
+    );
+  }
+
+  function currentQuestionHintLetter(question) {
+    const hintIndex = attempt?.questionHintIndex;
+    if (hintIndex === null || hintIndex === undefined) return '';
+    const answer = matchingQuestionAnswers(question)[0] || normalizedQuestionAnswers(question)[0] || '';
+    return answer[hintIndex] || '';
+  }
+
+  function isAcceptedQuestionEntry(question, entry) {
+    const hintIndex = attempt?.questionHintIndex;
+    return normalizedQuestionAnswers(question).some((answer) => {
+      if (hintIndex === null || hintIndex === undefined) return answer === entry;
+      return answer.slice(0, hintIndex) + answer.slice(hintIndex + 1) === entry;
+    });
+  }
+
+  function updateQuestionSubmitButton() {
+    const button = document.querySelector('#submit-question');
+    if (!button) return;
+    const ready = Boolean(attempt && currentQuestion() && attempt.questionEntry.length === keyboardModeMax('question'));
+    button.disabled = !ready;
+    button.classList.toggle('is-ready', ready);
+    button.setAttribute('aria-disabled', String(!ready));
+  }
+
+  function renderQuestionSlots() {
+    const question = currentQuestion();
+    if (!attempt || !question) return;
+
+    const total = countLetters(question.answer);
+    const hintIndex = attempt.questionHintIndex;
+    const hintLetter = currentQuestionHintLetter(question);
+    const entry = [...attempt.questionEntry];
+
+    elements.answerSlots.replaceChildren();
+    elements.answerSlots.style.setProperty('--slot-count', String(total));
+    elements.answerSlots.style.maxWidth = `${Math.min(360, total * 46)}px`;
+
+    for (let index = 0; index < total; index += 1) {
+      const slot = document.createElement('span');
+      slot.className = 'answer-slot';
+
+      if (index === hintIndex) {
+        slot.textContent = hintLetter;
+        slot.classList.add('filled', 'hint-letter');
+        slot.setAttribute('aria-label', `Lettre indice : ${hintLetter}`);
+      } else {
+        const entryIndex = hintIndex === null || index < hintIndex ? index : index - 1;
+        const letter = entry[entryIndex];
+        if (letter) {
+          slot.textContent = letter;
+          slot.classList.add('filled');
+        } else if (entryIndex === entry.length) {
+          slot.classList.add('next');
+        }
+      }
+      elements.answerSlots.append(slot);
+    }
+
+    elements.answerSlots.setAttribute('aria-label', `Réponse avec une lettre indice, ${attempt.questionEntry.length} lettre${attempt.questionEntry.length > 1 ? 's' : ''} saisie${attempt.questionEntry.length > 1 ? 's' : ''}`);
+    updateQuestionSubmitButton();
   }
 
   function renderSlots(container, count, value, ariaPrefix) {
@@ -320,6 +406,7 @@
     const question = currentQuestion();
     if (!attempt || !question) return;
     attempt.questionEntry = '';
+    attempt.questionHintIndex = chooseQuestionHintIndex(question);
 
     elements.hudLevel.textContent = `${attempt.level.difficultyLabel} · 1`;
     elements.hudQuestion.textContent = `Question ${attempt.questionIndex + 1}/7`;
@@ -329,7 +416,7 @@
     elements.inputMessage.textContent = '';
     elements.answerSlots.classList.remove('is-error', 'shake');
     renderLives(elements.lives, attempt.lives);
-    renderSlots(elements.answerSlots, countLetters(question.answer), '', 'Réponse');
+    renderQuestionSlots();
     renderLiveCollection();
   }
 
@@ -358,7 +445,10 @@
   }
 
   function keyboardModeMax(mode) {
-    if (mode === 'question') return countLetters(currentQuestion()?.answer || '');
+    if (mode === 'question') {
+      const total = countLetters(currentQuestion()?.answer || '');
+      return Math.max(0, total - (attempt?.questionHintIndex === null || attempt?.questionHintIndex === undefined ? 0 : 1));
+    }
     if (mode === 'final') return 7;
     return 0;
   }
@@ -375,7 +465,7 @@
       attempt.questionEntry = clean;
       elements.inputMessage.textContent = '';
       elements.answerSlots.classList.remove('is-error');
-      renderSlots(elements.answerSlots, max, clean, 'Réponse');
+      renderQuestionSlots();
     } else {
       attempt.finalEntry = clean;
       elements.finalMessage.textContent = '';
@@ -424,16 +514,28 @@
         if (key === 'BACKSPACE') {
           button.classList.add('action');
           button.setAttribute('aria-label', 'Effacer la dernière lettre');
-          button.append(svgUse('i-delete'));
-        } else if (key === 'ENTER') {
-          button.classList.add('confirm');
-          button.setAttribute('aria-label', 'Valider la réponse');
-          button.append(svgUse('i-check'));
+          button.textContent = '‹';
         } else {
           button.textContent = key;
           button.setAttribute('aria-label', `Lettre ${key}`);
         }
-        button.addEventListener('click', () => handleKey(mode, key));
+
+        let lastPointerHandled = 0;
+        button.addEventListener('pointerdown', (event) => {
+          if (event.pointerType === 'mouse' && event.button !== 0) return;
+          event.preventDefault();
+          lastPointerHandled = performance.now();
+          button.classList.add('is-pressed');
+          window.setTimeout(() => button.classList.remove('is-pressed'), 90);
+          handleKey(mode, key);
+        });
+        button.addEventListener('click', (event) => {
+          if (performance.now() - lastPointerHandled < 500) {
+            event.preventDefault();
+            return;
+          }
+          handleKey(mode, key);
+        });
         rowElement.append(button);
       });
       container.append(rowElement);
@@ -443,7 +545,7 @@
   function submitQuestion() {
     const question = currentQuestion();
     if (!attempt || !question) return;
-    const expected = countLetters(question.answer);
+    const expected = keyboardModeMax('question');
     const value = attempt.questionEntry;
 
     if (value.length < expected) {
@@ -455,7 +557,7 @@
       return;
     }
 
-    if (isAcceptedAnswer(question, value)) {
+    if (isAcceptedQuestionEntry(question, value)) {
       attempt.statuses[attempt.questionIndex] = 'correct';
       attempt.earned[attempt.questionIndex] = question.rewardLetter;
       renderLiveCollection();
@@ -649,6 +751,8 @@
     document.querySelector('#quit-level').addEventListener('click', () => showScreen('levels'));
     document.querySelector('#final-quit').addEventListener('click', () => showScreen('levels'));
     document.querySelector('#skip-question').addEventListener('click', () => missQuestion(true));
+    document.querySelector('#submit-question').addEventListener('click', submitQuestion);
+    document.querySelector('#submit-final').addEventListener('click', submitFinalWord);
     elements.feedbackContinue.addEventListener('click', closeFeedback);
     document.querySelector('#replay-level').addEventListener('click', () => startLevel(attempt.level.id));
     document.querySelector('#retry-level').addEventListener('click', () => startLevel(attempt.level.id));

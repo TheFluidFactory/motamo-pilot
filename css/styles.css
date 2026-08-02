@@ -63,6 +63,62 @@ button{font:inherit;color:inherit}svg{display:block}[hidden]{display:none!import
 @keyframes screen-in{from{opacity:0;translate:0 .4rem}to{opacity:1;translate:0 0}}@keyframes splash-rise{from{opacity:0;scale:.7;translate:0 .7rem}to{opacity:1;scale:1;translate:0 0}}@keyframes tile-in{from{opacity:0;scale:.65}to{opacity:1;scale:1}}@keyframes key-pop{0%{scale:.84}100%{scale:1}}@keyframes reward-pop{0%{opacity:0;scale:.4;rotate:-10deg}70%{opacity:1;scale:1.12}100%{scale:1;rotate:0deg}}@keyframes star-pop{0%{opacity:0;scale:.2;rotate:-20deg}70%{opacity:1;scale:1.14}100%{scale:1;rotate:0deg}}@keyframes confetti-fall{to{translate:3rem 110dvh;rotate:620deg}}@keyframes rain-fall{to{translate:-1rem 110dvh}}@keyframes shake{20%{translate:-6px 0}40%{translate:6px 0}60%{translate:-4px 0}80%{translate:4px 0}}.shake{animation:shake .3s linear}
 
 @media(min-width:700px){body{padding-block:1.4rem}.app{min-height:min(900px,calc(100dvh - 2.8rem));border-radius:2rem}.screen{min-height:min(900px,calc(100dvh - 2.8rem));border-radius:inherit}.screen-scroll{height:calc(min(900px,100dvh - 2.8rem) - 3.5rem - env(safe-area-inset-top))}.screen-home{min-height:min(900px,calc(100dvh - 2.8rem))}.play-layout,.final-layout{height:calc(min(900px,100dvh - 2.8rem) - 3.5rem - env(safe-area-inset-top))}.splash{left:50%;width:min(100%,var(--app-max));translate:-50% 0;border-radius:2rem}}
+
+/* Logo sizing corrections: keep splash artwork inside the app-width frame. */
+.splash-brand{width:min(100%,var(--app-max));max-width:var(--app-max);padding-inline:clamp(1.25rem,5vw,2rem)}
+.brand-logo-splash{width:min(100%,22rem);max-width:22rem;max-height:55dvh;margin-inline:auto}
+
 @media(max-width:390px){:root{--touch:43px}.brand-logo-home{width:min(100%,19rem)}.brand-logo-splash{width:min(92vw,22rem)}.screen-scroll{padding-inline:.75rem}.home-content{width:min(100%,19rem)}.button{padding-inline:.72rem;font-size:.9rem}.how-grid{gap:.55rem}.how-step-card{padding:.55rem;min-height:12rem}.how-heading h3{font-size:.7rem}.mission-card{grid-template-columns:2.75rem minmax(0,1fr) auto;padding:.62rem;gap:.55rem}.mission-icon{width:2.65rem;height:2.65rem}.level-grid{gap:.26rem}.level-tile{font-size:.62rem}.play-scroll{padding-inline:.62rem}.question-card{min-height:5.4rem}.key{height:2.4rem;font-size:.78rem}.keyboard-row{gap:.2rem}.keyboard-panel{padding-inline:.3rem}.letter-tile{--tile:2.08rem}.final-rack .letter-tile{--tile:2.35rem}}
 @media(max-width:340px){.how-grid{grid-template-columns:1fr}.how-step-card{min-height:11.5rem}.level-grid{grid-template-columns:repeat(8,minmax(0,1fr))}.mission-card{grid-template-columns:2.65rem minmax(0,1fr)}.mission-reward{grid-column:1/-1;grid-row:2;justify-self:end;display:flex;align-items:center}.question-text{font-size:1rem}.answer-slot{border-radius:.38rem}.keyboard-panel{gap:.27rem}.keyboard-row{gap:.16rem}.key{height:2.25rem;border-radius:.45rem;font-size:.72rem}.confirm-actions{grid-template-columns:1fr}}
+
+
+/* Larger, more responsive in-app keyboard and separate answer confirmation */
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+.answer-submit{width:calc(100% - .2rem);min-height:2.85rem;margin:.02rem .1rem .04rem;border-radius:.78rem;font-size:.88rem;box-shadow:0 7px 0 var(--purple-800),0 11px 22px rgba(0,0,0,.24),inset 0 1px 0 rgba(255,255,255,.22)}
+.answer-submit:active{transform:translateY(2px);box-shadow:0 4px 0 var(--purple-800),0 7px 14px rgba(0,0,0,.2)}
+.keyboard-panel{gap:.42rem;padding:.7rem .55rem calc(.72rem + env(safe-area-inset-bottom))}
+.keyboard-row{gap:.3rem}
+.keyboard-row:last-child{padding-inline:1rem}
+.key{height:clamp(3rem,7.2dvh,3.5rem);border-radius:.68rem;font-size:clamp(.94rem,3.3vw,1.12rem);box-shadow:0 4px 0 #0a1d3c,inset 0 1px 0 rgba(255,255,255,.16);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.key:hover{filter:brightness(1.08)}
+.key:active,.key.is-pressed{transform:translateY(2px) scale(.985);filter:brightness(1.16);box-shadow:0 1px 0 #0a1d3c,inset 0 1px 0 rgba(255,255,255,.18)}
+.key.action{flex:1.25}
+.key .icon{width:1.3rem;height:1.3rem}
+@media(max-width:390px){.keyboard-panel{gap:.36rem;padding:.58rem .38rem calc(.62rem + env(safe-area-inset-bottom))}.keyboard-row{gap:.22rem}.keyboard-row:last-child{padding-inline:.55rem}.key{height:clamp(2.85rem,7dvh,3.15rem);border-radius:.6rem;font-size:clamp(.88rem,3.6vw,1rem)}.answer-submit{min-height:2.7rem;font-size:.82rem}}
+@media(max-width:340px){.keyboard-panel{gap:.31rem;padding-inline:.3rem}.keyboard-row{gap:.16rem}.keyboard-row:last-child{padding-inline:.3rem}.key{height:2.75rem;border-radius:.52rem;font-size:.86rem}.answer-submit{min-height:2.6rem;font-size:.78rem}}
+@media(max-height:650px){.keyboard-panel{gap:.28rem;padding-top:.42rem;padding-bottom:calc(.46rem + env(safe-area-inset-bottom))}.key{height:2.65rem}.question-card{min-height:4.8rem}.game-stack{gap:.48rem}.block-answer-card,.collection-panel{padding:.55rem}.answer-submit{min-height:2.5rem}}
+
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}
+
+
+/* Native helper letter and answer-ready states */
+.answer-slot{position:relative}
+.answer-slot.hint-letter{
+  border-color:#ffd45a!important;
+  background:linear-gradient(180deg,#fff8ca,#f3cf63)!important;
+  color:#3a2b06!important;
+  box-shadow:0 4px 0 #b88a18,0 0 0 3px rgba(255,200,61,.15),0 7px 12px rgba(0,0,0,.22)!important
+}
+.answer-slot.hint-letter::after{
+  content:"✦";position:absolute;top:-.35rem;right:-.2rem;display:grid;place-items:center;
+  width:.9rem;height:.9rem;border-radius:999px;background:var(--purple-600);color:#fff;
+  font-size:.52rem;box-shadow:0 3px 7px rgba(0,0,0,.28)
+}
+.keyboard-row .key.action{
+  order:99;flex:1.25!important;background:linear-gradient(180deg,#f6be35,#d9820b)!important;
+  color:#10244d!important;font-size:1.75rem!important;line-height:1!important;
+  box-shadow:0 4px 0 #8c4e04,inset 0 1px 0 rgba(255,255,255,.38)!important
+}
+.keyboard-row .key.action:active,.keyboard-row .key.action.is-pressed{
+  box-shadow:0 1px 0 #8c4e04,inset 0 1px 0 rgba(255,255,255,.3)!important
+}
+#submit-question.answer-submit{
+  background:linear-gradient(180deg,#8490a9,#5e6a83);
+  box-shadow:0 6px 0 #3d475d,0 10px 18px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.18);
+  opacity:.62;cursor:not-allowed
+}
+#submit-question.answer-submit.is-ready{
+  background:linear-gradient(180deg,#35c86a,#168943);
+  box-shadow:0 6px 0 #0c5c2d,0 10px 20px rgba(19,153,72,.3),inset 0 1px 0 rgba(255,255,255,.24);
+  opacity:1;cursor:pointer
+}

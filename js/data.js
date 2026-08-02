@@ -54,10 +54,3 @@ window.MOTAMO_LEVELS = [
     ]
   }
 ];
-
-(() => {
-  const script = document.createElement('script');
-  script.src = 'js/hint-keyboard-patch.js';
-  script.async = false;
-  document.head.append(script);
-})();
